@@ -35,6 +35,14 @@ function Heading({ name, count }: { name: string; count: number }) {
   );
 }
 
+function ViewingTip() {
+  return (
+    <p className="rounded-box border border-info/40 bg-info/10 p-3 text-sm">
+      For the best view of the artwork, we recommend using a computer or tablet rather than a phone.
+    </p>
+  );
+}
+
 function VotingAs({ roundId, name }: { roundId: string; name: string }) {
   return (
     <form action={forgetMemberAction} className="flex flex-wrap items-center gap-2 text-sm mb-6 pb-3 border-b border-base-300">
@@ -145,6 +153,9 @@ export default async function VotePage({
     return (
       <section className="max-w-2xl">
         <Heading name={round.name} count={round.applicants.length} />
+        <div className="mb-6">
+          <ViewingTip />
+        </div>
         <PasscodeForm roundId={round.id} />
       </section>
     );
@@ -159,6 +170,7 @@ export default async function VotePage({
           Welcome. Committee members not attending the meeting are asked to view each applicant&apos;s work and vote
           here. Please start by choosing your name.
         </p>
+        <ViewingTip />
         <NamePicker roundId={round.id} members={members} />
       </section>
     );
