@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import {
   publishAction,
@@ -65,6 +66,9 @@ function Published({ round, voteUrl }: { round: RoundSummary; voteUrl: string })
           {round.applicantCount} applicants · published {formatDate(round.publishedAt)}
           {round.refreshedAt !== round.publishedAt && ` · refreshed ${formatDate(round.refreshedAt)}`}
         </span>
+        <Link href={`/admin/results/${round.id}`} className="btn btn-sm btn-primary ml-auto">
+          View results
+        </Link>
       </div>
 
       <div>

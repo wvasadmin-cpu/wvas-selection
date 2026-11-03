@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ fontFamily: "var(--font-source-sans), sans-serif" }}>
         <SiteHeader />
         <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">{children}</main>
-        <div className="fixed bottom-2 right-3 text-[10px] text-base-content/30 font-mono pointer-events-none select-none">
+        <div className="fixed bottom-2 right-3 text-[10px] text-base-content/30 font-mono pointer-events-none select-none print:hidden">
           rev {commitSha}
         </div>
       </body>

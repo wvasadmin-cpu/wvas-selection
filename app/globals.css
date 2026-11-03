@@ -36,3 +36,18 @@
 .font-display {
   font-family: var(--font-playfair), Georgia, serif;
 }
+
+/* Printed results: plain white A4 pages. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  body {
+    background: white;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+}

@@ -47,7 +47,19 @@ describe("summariseRound", () => {
   const summary = summariseRound(applicants, ballots, members);
 
   it("groups members by response", () => {
-    expect(summary.responses).toEqual({ voted: ["Alex", "Bea"], attending: ["Cal"], notYet: ["Dee"] });
+    const names = (list: { name: string }[]) => list.map((r) => r.name);
+    expect(names(summary.responses.complete)).toEqual([]);
+    expect(names(summary.responses.started)).toEqual(["Alex", "Bea"]);
+    expect(names(summary.responses.attending)).toEqual(["Cal"]);
+    expect(names(summary.responses.notYet)).toEqual(["Dee"]);
+    expect(summary.responses.notYet[0].updatedAt).toBeNull();
+  });
+
+  it("counts a member as complete once every applicant has votes and feedback", () => {
+    const done = ballot("m1", { votes: { "ab-1": "yes", "ab-2": "no", "cd-1": "yes" }, feedback: { ab: "x", cd: "y" } });
+    const s = summariseRound(applicants, [done], members);
+    expect(s.responses.complete.map((r) => r.name)).toEqual(["Alex"]);
+    expect(s.responses.complete[0].updatedAt).toBe("2026-11-03T10:00:00Z");
   });
 
   it("counts remote votes per artwork", () => {

@@ -15,30 +15,32 @@ export type ApplicantSummary = {
   feedback: FeedbackEntry[];
 };
 
-export type RoundSummary = {
-  responses: { voted: string[]; attending: string[]; notYet: string[] };
+export type Responder = { memberId: string; name: string; updatedAt: string | null };
+
+export type RoundResults = {
+  responses: {
+    /** Voted on every applicant, with feedback. */
+    complete: Responder[];
+    /** Started but not finished. */
+    started: Responder[];
+    attending: Responder[];
+    notYet: Responder[];
+  };
   applicants: ApplicantSummary[];
 };
 
-function hasAnswered(ballot: Ballot): boolean {
-  return (
-    Object.keys(ballot.votes).length > 0 ||
-    Object.values(ballot.feedback).some((text) => text.trim() !== "")
-  );
-}
-
-export function summariseRound(applicants: Applicant[], ballots: Ballot[], members: CommitteeMember[]): RoundSummary {
+export function summariseRound(applicants: Applicant[], ballots: Ballot[], members: CommitteeMember[]): RoundResults {
   const nameOf = (id: string) => members.find((m) => m.id === id)?.name ?? "Former committee member";
   const byMember = new Map(ballots.map((b) => [b.memberId, b]));
 
-  const voted: string[] = [];
-  const attending: string[] = [];
-  const notYet: string[] = [];
+  const responses: RoundResults["responses"] = { complete: [], started: [], attending: [], notYet: [] };
   for (const member of members) {
     const ballot = byMember.get(member.id);
-    if (ballot?.attending) attending.push(member.name);
-    else if (ballot && hasAnswered(ballot)) voted.push(member.name);
-    else notYet.push(member.name);
+    const who = { memberId: member.id, name: member.name, updatedAt: ballot?.updatedAt ?? null };
+    if (!ballot) responses.notYet.push(who);
+    else if (ballot.attending) responses.attending.push(who);
+    else if (applicants.every((a) => applicantComplete(a, ballot))) responses.complete.push(who);
+    else responses.started.push(who);
   }
 
   // Votes from members marked as attending are not counted: they vote at the meeting.
@@ -76,7 +78,7 @@ export function summariseRound(applicants: Applicant[], ballots: Ballot[], membe
     };
   });
 
-  return { responses: { voted, attending, notYet }, applicants: summaries };
+  return { responses, applicants: summaries };
 }
 
 /**

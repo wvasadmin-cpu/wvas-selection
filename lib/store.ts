@@ -86,3 +86,7 @@ export async function listBallots(roundId: string): Promise<Ballot[]> {
   const ballots = await Promise.all(blobs.map((b) => readJSON<Ballot | null>(b.key, null)));
   return ballots.filter((b): b is Ballot => b !== null);
 }
+
+export async function deleteBallot(roundId: string, memberId: string): Promise<void> {
+  await withTimeout(store().delete(`ballot/${roundId}/${memberId}`), "delete ballot");
+}
