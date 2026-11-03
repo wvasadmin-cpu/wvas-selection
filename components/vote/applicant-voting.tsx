@@ -19,6 +19,7 @@ type Props = {
   initialVotes: Record<string, Vote>;
   initialFeedback: string;
   backHref: string | null;
+  backLabel?: string;
   nextHref: string;
   nextLabel: string;
 };
@@ -30,6 +31,7 @@ export default function ApplicantVoting({
   initialVotes,
   initialFeedback,
   backHref,
+  backLabel = "← Back",
   nextHref,
   nextLabel,
 }: Props) {
@@ -173,7 +175,7 @@ export default function ApplicantVoting({
       <nav className="flex flex-wrap items-center justify-between gap-3 pt-2">
         {backHref ? (
           <button type="button" className="btn" disabled={moving} onClick={() => go(backHref, false)}>
-            ← Back
+            {backLabel}
           </button>
         ) : (
           <span />

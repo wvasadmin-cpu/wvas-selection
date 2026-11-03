@@ -14,8 +14,8 @@ export default function SiteHeader() {
         />
         <div>
           <p className="text-secondary text-[11px] tracking-[0.18em] uppercase mb-1">Welland Valley Art Society</p>
-          <h1 className="font-display text-2xl text-primary-content font-normal leading-tight">
-            Exhibitor Selection
+          <h1 className="font-display text-xl sm:text-2xl text-primary-content font-normal leading-tight">
+            Exhibitor Applicant Preview/Remote Judging
           </h1>
         </div>
       </div>

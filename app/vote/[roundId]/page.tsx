@@ -174,8 +174,9 @@ export default async function VotePage({
         <div className="space-y-3">
           <p className="font-semibold text-lg">Are you attending the committee meeting?</p>
           <p className="text-base-content/80">
-            If you are, you&apos;ll vote there and nothing more is needed now. If not, you&apos;ll vote Yes or No on each
-            artwork and leave feedback for each applicant.
+            If you are, you&apos;ll vote there and nothing more is needed now. Artist submissions can still be viewed and
+            comments made on the next page. If you are unable to attend, please vote Yes or No on each artwork and leave
+            feedback for each applicant. Thank you.
           </p>
           <AttendingButtons roundId={round.id} />
         </div>
@@ -236,7 +237,8 @@ export default async function VotePage({
         attending={ballot.attending}
         initialVotes={ballot.votes}
         initialFeedback={ballot.feedback[applicant.id] ?? ""}
-        backHref={index > 0 ? `/vote/${round.id}?applicant=${index}` : null}
+        backHref={index > 0 ? `/vote/${round.id}?applicant=${index}` : `/vote/${round.id}?view=summary`}
+        backLabel={index > 0 ? "← Back" : "← Back to start"}
         nextHref={isLast ? `/vote/${round.id}?view=summary` : `/vote/${round.id}?applicant=${index + 2}`}
         nextLabel={isLast ? "Finish" : "Next applicant →"}
       />

@@ -7,7 +7,7 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfa
 const sourceSans = Source_Sans_3({ subsets: ["latin"], variable: "--font-source-sans", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Welland Valley Art Society — Exhibitor Selection",
+  title: "Welland Valley Art Society — Exhibitor Applicant Preview/Remote Judging",
   description: "Committee judging of new exhibitor applications.",
   // Private committee site: keep it out of search engines.
   robots: { index: false, follow: false },
