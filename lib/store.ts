@@ -12,13 +12,28 @@ function store() {
   return getStore({ name: "wvas-selection", consistency: "strong" });
 }
 
+/** Fail with a clear error rather than leave a page hanging. */
+function withTimeout<T>(promise: Promise<T>, what: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Storage didn't respond (${what}).`)), 10_000)),
+  ]);
+}
+
+// Reading a key that doesn't exist never answers on Netlify, so check it
+// exists first (that check answers straight away either way).
+async function exists(key: string): Promise<boolean> {
+  return (await withTimeout(store().getMetadata(key), `check ${key}`)) !== null;
+}
+
 async function readJSON<T>(key: string, fallback: T): Promise<T> {
-  const value = await store().get(key, { type: "json" });
+  if (!(await exists(key))) return fallback;
+  const value = await withTimeout(store().get(key, { type: "json" }), `read ${key}`);
   return (value as T | null) ?? fallback;
 }
 
 async function writeJSON(key: string, value: unknown): Promise<void> {
-  await store().setJSON(key, value);
+  await withTimeout(store().setJSON(key, value), `save ${key}`);
 }
 
 // Committee
@@ -50,9 +65,11 @@ export async function saveRound(round: Round): Promise<void> {
 // Resized photos, by round and artwork
 export async function saveImage(roundId: string, artworkId: string, jpeg: Buffer): Promise<void> {
   const bytes = new Uint8Array(jpeg);
-  await store().set(`image/${roundId}/${artworkId}`, bytes.buffer);
+  await withTimeout(store().set(`image/${roundId}/${artworkId}`, bytes.buffer), "save photo");
 }
 
 export async function getImage(roundId: string, artworkId: string): Promise<ArrayBuffer | null> {
-  return store().get(`image/${roundId}/${artworkId}`, { type: "arrayBuffer" });
+  const key = `image/${roundId}/${artworkId}`;
+  if (!(await exists(key))) return null;
+  return withTimeout(store().get(key, { type: "arrayBuffer" }), `read ${key}`);
 }
