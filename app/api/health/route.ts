@@ -23,16 +23,16 @@ export async function GET() {
     SITE_ID: !!process.env.SITE_ID,
     DEPLOY_ID: !!process.env.DEPLOY_ID,
   };
-  const checks = [
-    await timed("eventual get", () => getStore("wvas-selection").get("health-check")),
-    await timed("strong get", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("health-check")),
-    await timed("eventual set", () => getStore("wvas-selection").set("health-check", new Date().toISOString())),
-    await timed("strong get missing json", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("no-such-key", { type: "json" })),
-    await timed("strong get missing plain", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("no-such-key")),
-    await timed("strong get slash missing", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("round/no-such")),
-    await timed("strong set slash", () => getStore({ name: "wvas-selection", consistency: "strong" }).setJSON("health/slash", { ok: 1 })),
-    await timed("strong get slash json", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("health/slash", { type: "json" })),
-    await timed("eventual get missing", () => getStore("wvas-selection").get("no-such-key")),
-  ];
+  const checks = await Promise.all([
+    timed("eventual get", () => getStore("wvas-selection").get("health-check")),
+    timed("strong get", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("health-check")),
+    timed("eventual set", () => getStore("wvas-selection").set("health-check", new Date().toISOString())),
+    timed("strong get missing json", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("no-such-key", { type: "json" })),
+    timed("strong get missing plain", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("no-such-key")),
+    timed("strong get slash missing", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("round/no-such")),
+    timed("strong set slash", () => getStore({ name: "wvas-selection", consistency: "strong" }).setJSON("health/slash", { ok: 1 })),
+    timed("strong get slash json", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("health/slash", { type: "json" })),
+    timed("eventual get missing", () => getStore("wvas-selection").get("no-such-key")),
+  ]);
   return Response.json({ env, checks });
 }
