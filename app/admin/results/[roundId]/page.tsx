@@ -91,7 +91,12 @@ export default async function ResultsPage({ params }: { params: Promise<{ roundI
             <span className="hidden print:inline"> · printed {printedAt}</span>
           </p>
         </div>
-        <PrintButton />
+        <div className="flex flex-wrap gap-2 print:hidden">
+          <Link href={`/admin/slips/${round.id}`} className="btn">
+            Paper voting slips
+          </Link>
+          <PrintButton />
+        </div>
       </header>
 
       <h3 className="font-display text-xl mb-3">Responses</h3>

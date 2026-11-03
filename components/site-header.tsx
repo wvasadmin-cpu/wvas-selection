@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function SiteHeader() {
   return (
-    <header className="bg-primary border-b-[3px] border-secondary">
+    <header className="bg-primary border-b-[3px] border-secondary print:hidden">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-4 sm:gap-5">
         <Image
           src="/wvas-mark.jpg"
