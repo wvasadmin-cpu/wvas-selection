@@ -4,6 +4,8 @@ import AdminSignIn from "@/components/admin-sign-in";
 import { getAdminEmail } from "@/lib/admin";
 import { AirtableError, fetchApplicationRecords } from "@/lib/airtable";
 import { countRounds, type RoundCount } from "@/lib/applicants";
+import { roundKey, type RoundSummary } from "@/lib/rounds";
+import { listPublishedRounds } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +14,12 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
   if (!email) return <AdminSignIn error={(await searchParams).error} />;
 
   let rounds: RoundCount[] = [];
+  let published: RoundSummary[] = [];
   let error = "";
   try {
-    rounds = countRounds(await fetchApplicationRecords());
+    const [records, list] = await Promise.all([fetchApplicationRecords(), listPublishedRounds()]);
+    rounds = countRounds(records);
+    published = list;
   } catch (e) {
     error = e instanceof AirtableError ? e.message : "Something went wrong reaching Airtable.";
     if (!(e instanceof AirtableError)) console.error(e);
@@ -34,14 +39,23 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
         <p className="text-base-content/70">No applications found in Airtable.</p>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
-          {rounds.map((r) => (
+          {rounds.map((r) => {
+            const pub = published.find((p) => roundKey(p.name) === roundKey(r.round));
+            return (
             <li key={r.round}>
               <Link
                 href={`/admin/rounds/${encodeURIComponent(r.round)}`}
                 className="card bg-base-100 border border-base-300 hover:border-primary transition-colors"
               >
                 <div className="card-body p-5">
-                  <h3 className="card-title font-display">{r.round}</h3>
+                  <h3 className="card-title font-display">
+                    {r.round}
+                    {pub && (
+                      <span className={`badge badge-sm ${pub.status === "open" ? "badge-success" : "badge-neutral"}`}>
+                        {pub.status === "open" ? "Open" : "Closed"}
+                      </span>
+                    )}
+                  </h3>
                   <p className="text-sm text-base-content/80">
                     {r.applicants} {r.applicants === 1 ? "applicant" : "applicants"} · {r.photos} of {r.artworks} photos
                     {r.incomplete > 0 && <span className="text-warning-content"> · {r.incomplete} incomplete</span>}
@@ -49,7 +63,8 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
                 </div>
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </section>
