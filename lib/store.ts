@@ -4,6 +4,7 @@ import type { CommitteeMember } from "./committee";
 import type { RoundCorrections } from "./corrections";
 import { roundKey, summaryOf, type Round, type RoundSummary } from "./rounds";
 import type { Ballot } from "./types";
+import type { Claim } from "./claims";
 
 // Site storage (Netlify Blobs): committee list, corrections, published rounds
 // and their resized photos (votes to come). Strong consistency so a page reads
@@ -89,4 +90,22 @@ export async function listBallots(roundId: string): Promise<Ballot[]> {
 
 export async function deleteBallot(roundId: string, memberId: string): Promise<void> {
   await withTimeout(store().delete(`ballot/${roundId}/${memberId}`), "delete ballot");
+}
+
+// Name locks: which device holds each member's name in a round
+export const getClaim = (roundId: string, memberId: string) =>
+  readJSON<Claim | null>(`claim/${roundId}/${memberId}`, null);
+
+export const saveClaim = (roundId: string, memberId: string, claim: Claim) =>
+  writeJSON(`claim/${roundId}/${memberId}`, claim);
+
+export async function deleteClaim(roundId: string, memberId: string): Promise<void> {
+  await withTimeout(store().delete(`claim/${roundId}/${memberId}`), "delete claim");
+}
+
+/** Member ids whose names are locked to a device in this round. */
+export async function listClaimedMemberIds(roundId: string): Promise<string[]> {
+  const prefix = `claim/${roundId}/`;
+  const { blobs } = await withTimeout(store().list({ prefix }), "list claims");
+  return blobs.map((b) => b.key.slice(prefix.length));
 }

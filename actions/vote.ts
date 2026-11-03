@@ -1,12 +1,14 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { voterCookieName, voterCookieValue } from "@/lib/access";
+import { decideClaim } from "@/lib/claims";
 import { passcodeMatches } from "@/lib/rounds";
-import { getBallot, getCommittee, getRound, saveBallot } from "@/lib/store";
+import { getBallot, getClaim, getCommittee, getRound, saveBallot, saveClaim } from "@/lib/store";
 import { cleanFeedback, newBallot } from "@/lib/vote-flow";
-import { COOKIE_OPTIONS, memberCookieName, requireVoter } from "@/lib/voter";
+import { COOKIE_OPTIONS, DEVICE_COOKIE, memberCookieName, requireVoter } from "@/lib/voter";
 import type { Vote } from "@/lib/types";
 
 export type VoteFormState = { ok: boolean; message: string; confirmName?: string } | null;
@@ -34,12 +36,25 @@ export async function chooseMemberAction(_prev: VoteFormState, formData: FormDat
   const member = (await getCommittee()).find((m) => m.id === memberId);
   if (!member) return { ok: false, message: "Please choose your name from the list." };
 
-  // Guard against picking someone else's name by mistake.
-  if (!confirmed && (await getBallot(roundId, memberId))) {
-    return { ok: false, message: "", confirmName: member.name };
+  const jar = await cookies();
+  let deviceId = jar.get(DEVICE_COOKIE)?.value;
+  if (!deviceId) {
+    deviceId = randomBytes(18).toString("base64url");
+    jar.set(DEVICE_COOKIE, deviceId, { ...COOKIE_OPTIONS, maxAge: 60 * 60 * 24 * 400 });
   }
 
-  (await cookies()).set(memberCookieName(roundId), member.id, COOKIE_OPTIONS);
+  const [claim, ballot] = await Promise.all([getClaim(roundId, memberId), getBallot(roundId, memberId)]);
+  const decision = decideClaim(claim, !!ballot, deviceId, confirmed);
+  if (decision === "blocked") {
+    return {
+      ok: false,
+      message: `${member.name}'s name is already being used on another device. If this is you on a new phone or computer, please contact the Membership Secretary, who can unlock it.`,
+    };
+  }
+  if (decision === "confirm") return { ok: false, message: "", confirmName: member.name };
+
+  if (!claim) await saveClaim(roundId, member.id, { deviceId, claimedAt: new Date().toISOString() });
+  jar.set(memberCookieName(roundId), member.id, COOKIE_OPTIONS);
   revalidatePath(votePath(roundId));
   return { ok: true, message: "" };
 }

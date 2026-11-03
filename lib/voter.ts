@@ -1,9 +1,10 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { hasVoterAccess } from "./access";
+import { claimMatches } from "./claims";
 import type { CommitteeMember } from "./committee";
 import type { Round } from "./rounds";
-import { getBallot, getCommittee, getRound } from "./store";
+import { getBallot, getClaim, getCommittee, getRound } from "./store";
 import type { Ballot } from "./types";
 
 // Who is voting. The member's choice of name is remembered in a cookie on
@@ -11,6 +12,9 @@ import type { Ballot } from "./types";
 // unguessable link keep outsiders out).
 
 export const memberCookieName = (roundId: string) => `wvas-member-${roundId}`;
+
+/** A random id for this browser, used to lock each name to one device. */
+export const DEVICE_COOKIE = "wvas-device";
 
 export const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -34,9 +38,14 @@ export async function getVoterContext(roundId: string): Promise<VoterContext | n
   const access = await hasVoterAccess(round);
   if (!access) return { round, access, members: [], member: null, ballot: null };
 
+  const jar = await cookies();
   const members = await getCommittee();
-  const memberId = (await cookies()).get(memberCookieName(roundId))?.value;
-  const member = members.find((m) => m.id === memberId) ?? null;
+  const memberId = jar.get(memberCookieName(roundId))?.value;
+  const chosen = members.find((m) => m.id === memberId) ?? null;
+
+  // The chosen name only counts on the device it's locked to; otherwise the
+  // voter is asked to choose again (and is stopped if the name is taken).
+  const member = chosen && claimMatches(await getClaim(roundId, chosen.id), jar.get(DEVICE_COOKIE)?.value) ? chosen : null;
   const ballot = member ? await getBallot(roundId, member.id) : null;
   return { round, access, members, member, ballot };
 }

@@ -4,8 +4,9 @@ import AdminNav from "@/components/admin-nav";
 import AdminSignIn from "@/components/admin-sign-in";
 import ClearBallotButton from "@/components/clear-ballot-button";
 import PrintButton from "@/components/print-button";
+import UnlockNameButton from "@/components/unlock-name-button";
 import { getAdminEmail } from "@/lib/admin";
-import { getCommittee, getRound, listBallots } from "@/lib/store";
+import { getCommittee, getRound, listBallots, listClaimedMemberIds } from "@/lib/store";
 import { summariseRound, type Responder } from "@/lib/tally";
 
 export const dynamic = "force-dynamic";
@@ -27,12 +28,14 @@ function ResponseGroup({
   roundId,
   canClear,
   tone,
+  claimed,
 }: {
   title: string;
   people: Responder[];
   roundId: string;
   canClear: boolean;
   tone: string;
+  claimed: Set<string>;
 }) {
   return (
     <div className="rounded-box border border-base-300 bg-base-100 p-4 break-inside-avoid print:bg-white">
@@ -48,6 +51,7 @@ function ResponseGroup({
               <span>{p.name}</span>
               {p.updatedAt && <span className="text-xs text-base-content/60">{when(p.updatedAt)}</span>}
               {canClear && <ClearBallotButton roundId={roundId} memberId={p.memberId} name={p.name} />}
+              {claimed.has(p.memberId) && <UnlockNameButton roundId={roundId} memberId={p.memberId} name={p.name} />}
             </li>
           ))}
         </ul>
@@ -61,7 +65,13 @@ export default async function ResultsPage({ params }: { params: Promise<{ roundI
   if (!email) return <AdminSignIn />;
 
   const { roundId } = await params;
-  const [round, ballots, members] = await Promise.all([getRound(roundId), listBallots(roundId), getCommittee()]);
+  const [round, ballots, members, claimedIds] = await Promise.all([
+    getRound(roundId),
+    listBallots(roundId),
+    getCommittee(),
+    listClaimedMemberIds(roundId),
+  ]);
+  const claimed = new Set(claimedIds);
   if (!round) notFound();
 
   const results = summariseRound(round.applicants, ballots, members);
@@ -102,13 +112,15 @@ export default async function ResultsPage({ params }: { params: Promise<{ roundI
       <h3 className="font-display text-xl mb-3">Responses</h3>
       <p className="mb-3 text-sm text-base-content/80 print:hidden">
         A decision waits until everyone not attending has voted, so &ldquo;Not started&rdquo; and &ldquo;Part-way&rdquo;
-        are the people to chase. Times are each person&apos;s last answer.
+        are the people to chase. Times are each person&apos;s last answer. Each name is locked to the device it was first
+        used on; &ldquo;unlock&rdquo; lets someone carry on from a different device, &ldquo;clear&rdquo; removes their
+        votes (e.g. a test run).
       </p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-10">
-        <ResponseGroup title="Voted online" people={complete} roundId={round.id} canClear tone="text-success" />
-        <ResponseGroup title="Attending meeting" people={attending} roundId={round.id} canClear tone="" />
-        <ResponseGroup title="Part-way" people={started} roundId={round.id} canClear tone="text-warning-content" />
-        <ResponseGroup title="Not started" people={notYet} roundId={round.id} canClear={false} tone="text-error" />
+        <ResponseGroup title="Voted online" claimed={claimed} people={complete} roundId={round.id} canClear tone="text-success" />
+        <ResponseGroup title="Attending meeting" claimed={claimed} people={attending} roundId={round.id} canClear tone="" />
+        <ResponseGroup title="Part-way" claimed={claimed} people={started} roundId={round.id} canClear tone="text-warning-content" />
+        <ResponseGroup title="Not started" claimed={claimed} people={notYet} roundId={round.id} canClear={false} tone="text-error" />
       </div>
 
       <div className="space-y-12">
