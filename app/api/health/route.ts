@@ -10,7 +10,7 @@ async function timed(label: string, fn: () => Promise<unknown>) {
       fn(),
       new Promise((_, reject) => setTimeout(() => reject(new Error("timed out after 8s")), 8000)),
     ]);
-    return { label, ok: true, ms: Date.now() - start, result: result === null ? "null" : typeof result };
+    return { label, ok: true, ms: Date.now() - start, result: result === null ? "null" : typeof result === "number" ? result : typeof result };
   } catch (e) {
     return { label, ok: false, ms: Date.now() - start, error: e instanceof Error ? `${e.name}: ${e.message}` : String(e) };
   }
@@ -33,6 +33,9 @@ export async function GET() {
     timed("strong set slash", () => getStore({ name: "wvas-selection", consistency: "strong" }).setJSON("health/slash", { ok: 1 })),
     timed("strong get slash json", () => getStore({ name: "wvas-selection", consistency: "strong" }).get("health/slash", { type: "json" })),
     timed("eventual get missing", () => getStore("wvas-selection").get("no-such-key")),
+    timed("list missing prefix", async () => (await getStore({ name: "wvas-selection", consistency: "strong" }).list({ prefix: "round/no-such" })).blobs.length),
+    timed("list existing prefix", async () => (await getStore({ name: "wvas-selection", consistency: "strong" }).list({ prefix: "health/" })).blobs.length),
+    timed("metadata missing", () => getStore({ name: "wvas-selection", consistency: "strong" }).getMetadata("no-such-key")),
   ]);
   return Response.json({ env, checks });
 }
