@@ -3,6 +3,7 @@ import { getStore } from "@netlify/blobs";
 import type { CommitteeMember } from "./committee";
 import type { RoundCorrections } from "./corrections";
 import { roundKey, summaryOf, type Round, type RoundSummary } from "./rounds";
+import type { Ballot } from "./types";
 
 // Site storage (Netlify Blobs): committee list, corrections, published rounds
 // and their resized photos (votes to come). Strong consistency so a page reads
@@ -72,4 +73,16 @@ export async function getImage(roundId: string, artworkId: string): Promise<Arra
   const key = `image/${roundId}/${artworkId}`;
   if (!(await exists(key))) return null;
   return withTimeout(store().get(key, { type: "arrayBuffer" }), `read ${key}`);
+}
+
+// Ballots: one per committee member per round
+export const getBallot = (roundId: string, memberId: string) =>
+  readJSON<Ballot | null>(`ballot/${roundId}/${memberId}`, null);
+
+export const saveBallot = (roundId: string, ballot: Ballot) => writeJSON(`ballot/${roundId}/${ballot.memberId}`, ballot);
+
+export async function listBallots(roundId: string): Promise<Ballot[]> {
+  const { blobs } = await withTimeout(store().list({ prefix: `ballot/${roundId}/` }), "list ballots");
+  const ballots = await Promise.all(blobs.map((b) => readJSON<Ballot | null>(b.key, null)));
+  return ballots.filter((b): b is Ballot => b !== null);
 }
