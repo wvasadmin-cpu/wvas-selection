@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { addMember, removeMember, renameMember, sortMembers, type CommitteeMember } from "./committee";
+import { addMember, parsePastedNames, removeMember, renameMember, sortMembers, type CommitteeMember } from "./committee";
+
+describe("parsePastedNames", () => {
+  it("reads plain names one per line", () => {
+    expect(parsePastedNames("Alex Example\n\n  Sam   Sample \n")).toEqual([{ name: "Alex Example" }, { name: "Sam Sample" }]);
+  });
+
+  it("reads spreadsheet rows, keeping a leading number as the id and skipping the header", () => {
+    expect(parsePastedNames("ID\tFirst Name\tSurname\n114\tAlex\tExample\r\n7\tSam\tSample-Smith")).toEqual([
+      { name: "Alex Example", sourceId: "114" },
+      { name: "Sam Sample-Smith", sourceId: "7" },
+    ]);
+  });
+});
 
 // Placeholder names only: the real list lives in the site's storage, not the code.
 const list: CommitteeMember[] = [

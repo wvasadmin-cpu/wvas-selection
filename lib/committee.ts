@@ -37,6 +37,27 @@ export function renameMember(members: CommitteeMember[], id: string, name: strin
   return { ok: true, members: sortMembers(members.map((m) => (m.id === id ? { ...m, name: clean } : m))) };
 }
 
+export type PastedName = { name: string; sourceId?: string };
+
+/**
+ * Read names pasted one per line, including rows copied from a spreadsheet
+ * ("114<tab>Anne<tab>Lindley"): a leading number becomes the member's id, the
+ * other cells are joined into the name. A header row is skipped.
+ */
+export function parsePastedNames(text: string): PastedName[] {
+  const result: PastedName[] = [];
+  for (const line of (text ?? "").split(/\r?\n/)) {
+    const cells = line.split("\t").map(cleanName).filter(Boolean);
+    if (cells.length === 0) continue;
+    let sourceId: string | undefined;
+    if (cells.length > 1 && /^\d+$/.test(cells[0])) sourceId = cells.shift();
+    const name = cleanName(cells.join(" "));
+    if (!name || /^(id\s+)?first name\b/i.test(name) || /^id$/i.test(name)) continue;
+    result.push(sourceId ? { name, sourceId } : { name });
+  }
+  return result;
+}
+
 export function removeMember(members: CommitteeMember[], id: string): CommitteeResult {
   if (!members.some((m) => m.id === id)) return { ok: false, error: "That member wasn't found." };
   return { ok: true, members: members.filter((m) => m.id !== id) };
