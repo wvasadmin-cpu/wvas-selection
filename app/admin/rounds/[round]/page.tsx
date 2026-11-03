@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdminNav from "@/components/admin-nav";
+import ArtworkGallery from "@/components/artwork-gallery";
 import AdminSignIn from "@/components/admin-sign-in";
 import { getAdminEmail } from "@/lib/admin";
 import { AirtableError, fetchApplicationRecords } from "@/lib/airtable";
@@ -45,7 +46,7 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
       )}
 
       <div className="space-y-12">
-        {ready.map(({ applicant }) => {
+        {ready.map(({ applicant, images }) => {
           const missing = applicant.artworks.filter((a) => !a.hasImage).length;
           return (
             <article key={applicant.id} className="card bg-base-100 border border-base-300">
@@ -68,33 +69,30 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
                 )}
                 {applicant.bio && <p className="whitespace-pre-line text-sm leading-relaxed">{applicant.bio}</p>}
 
-                <ul className="grid gap-5 grid-cols-2 md:grid-cols-3 mt-4">
-                  {applicant.artworks.map((art) => {
-                    const image = entries.find((e) => e.applicant.id === applicant.id)?.images.find((i) => i.artworkId === art.id);
-                    return (
-                      <li key={art.id}>
-                        <div className="aspect-square bg-base-200 rounded overflow-hidden flex items-center justify-center">
-                          {image ? (
-                            // Airtable's own (expiring) link: fine for the admin preview only.
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={image.url} alt={art.title} loading="lazy" className="w-full h-full object-contain" />
-                          ) : (
-                            <span className="text-sm text-base-content/60">Image to follow</span>
-                          )}
-                        </div>
-                        <p className="mt-2 font-semibold text-sm">
-                          {art.slot}. {art.title}
-                        </p>
-                        <p className="text-sm text-base-content/80">
-                          {art.medium || <span className="italic">Medium not given</span>}
-                          {art.mediumGuessed && art.medium && (
-                            <span className="ml-1 text-xs bg-secondary/30 px-1 rounded">guessed</span>
-                          )}
-                        </p>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="mt-4">
+                  <ArtworkGallery
+                    items={applicant.artworks.map((art) => ({
+                      id: art.id,
+                      // Airtable's own (expiring) link: fine for the admin preview only.
+                      src: images.find((i) => i.artworkId === art.id)?.url ?? null,
+                      title: `${art.slot}. ${art.title}`,
+                      medium: art.medium,
+                      caption: (
+                        <>
+                          <p className="font-semibold text-sm">
+                            {art.slot}. {art.title}
+                          </p>
+                          <p className="text-sm text-base-content/80">
+                            {art.medium || <span className="italic">Medium not given</span>}
+                            {art.mediumGuessed && art.medium && (
+                              <span className="ml-1 text-xs bg-secondary/30 px-1 rounded">guessed</span>
+                            )}
+                          </p>
+                        </>
+                      ),
+                    }))}
+                  />
+                </div>
               </div>
             </article>
           );
