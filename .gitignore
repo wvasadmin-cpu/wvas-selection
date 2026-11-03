@@ -1,0 +1,56 @@
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Editors / IDEs ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- Environment / secrets ----
+.env
+.env.*
+!.env.example
+*.local
+
+# ---- Logs ----
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- Dependencies / build output ----
+node_modules/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+
+# ---- Next.js / Vercel ----
+.next/
+.vercel/
+next-env.d.ts
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# ---- .NET ----
+bin/
+obj/
+
+# ---- Claude Code ----
+# Keep shared project config (.claude/), ignore local/personal overrides
+.claude/settings.local.json
+.claude/projects/
+.claude/memory/
+
+temp/

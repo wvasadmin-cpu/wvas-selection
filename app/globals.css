@@ -1,0 +1,38 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* The same daisyUI "gallery" theme as the WVAS stewarding rota. */
+@plugin "daisyui/theme" {
+  name: "gallery";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #f7f3ee;   /* cream page background */
+  --color-base-200: #efe9e1;
+  --color-base-300: #e0d8ce;
+  --color-base-content: #3a2e22; /* warm dark text */
+
+  --color-primary: #2c4a3e;      /* deep green */
+  --color-primary-content: #f7f3ee;
+  --color-secondary: #c8a96e;    /* gold */
+  --color-secondary-content: #2c2417;
+  --color-accent: #8a7a6a;       /* muted brown */
+  --color-accent-content: #f7f3ee;
+  --color-neutral: #1a3028;      /* darkest green */
+  --color-neutral-content: #f7f3ee;
+
+  --color-info: #3a6ea5;
+  --color-info-content: #ffffff;
+  --color-success: #2c4a3e;
+  --color-success-content: #ffffff;
+  --color-warning: #c8a96e;
+  --color-warning-content: #2c2417;
+  --color-error: #8b2e2e;
+  --color-error-content: #ffffff;
+}
+
+/* Serif display headings, matching the rota site. */
+.font-display {
+  font-family: var(--font-playfair), Georgia, serif;
+}
