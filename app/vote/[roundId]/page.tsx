@@ -230,6 +230,7 @@ export default async function VotePage({
           <Heading name={round.name} count={applicants.length} />
         </div>
         <div className="space-y-3">
+          <p className="font-display text-2xl">Hi {ballot.name.split(" ")[0]},</p>
           <p className="font-semibold text-lg">Are you attending the committee meeting?</p>
           <p className="text-base-content/80">
             If you are, you&apos;ll vote there and nothing more is needed now. Artist submissions can still be viewed and
