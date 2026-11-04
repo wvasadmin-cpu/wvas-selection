@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { forgetMemberAction, setAttendingAction } from "@/actions/vote";
+import { setAttendingAction, startOverAction } from "@/actions/vote";
 import ApplicantVoting, { type PublicApplicant } from "@/components/vote/applicant-voting";
 import Guidelines from "@/components/vote/guidelines";
-import NamePicker from "@/components/vote/name-picker";
+import NameForm from "@/components/vote/name-form";
 import PasscodeForm from "@/components/vote/passcode-form";
 import type { Applicant, Ballot } from "@/lib/types";
 import { firstIncomplete, progressOf, whatsMissing } from "@/lib/vote-flow";
@@ -45,19 +45,22 @@ function ViewingTip() {
 
 function VotingAs({ roundId, name }: { roundId: string; name: string }) {
   return (
-    <form action={forgetMemberAction} className="flex flex-wrap items-center gap-2 text-sm mb-6 pb-3 border-b border-base-300">
+    <form
+      action={startOverAction}
+      className="flex flex-wrap items-center gap-2 text-sm mb-6 pb-3 border-b border-base-300"
+    >
       <input type="hidden" name="roundId" value={roundId} />
       <span>
         Voting as <strong>{name}</strong>
       </span>
       <button type="submit" className="link link-hover text-base-content/70">
-        Not you?
+        Not you? Start as someone else
       </button>
     </form>
   );
 }
 
-function AttendingButtons({ roundId, current }: { roundId: string; current?: boolean }) {
+function AttendingButtons({ roundId, current }: { roundId: string; current?: boolean | null }) {
   return (
     <form action={setAttendingAction} className="flex flex-wrap gap-3">
       <input type="hidden" name="roundId" value={roundId} />
@@ -137,7 +140,7 @@ export default async function VotePage({
   const query = await searchParams;
   const ctx = await getVoterContext(roundId);
   if (!ctx) notFound();
-  const { round, access, members, member, ballot } = ctx;
+  const { round, access, ballot } = ctx;
 
   if (round.status === "closed") {
     return (
@@ -162,25 +165,25 @@ export default async function VotePage({
   }
 
   // 2. Who are you?
-  if (!member) {
+  if (!ballot) {
     return (
       <section className="max-w-2xl space-y-6">
         <Heading name={round.name} count={round.applicants.length} />
         <p>
           Welcome. Committee members not attending the meeting are asked to view each applicant&apos;s work and vote
-          here. Please start by choosing your name.
+          here. Please start by entering your name.
         </p>
         <ViewingTip />
-        <NamePicker roundId={round.id} members={members} />
+        <NameForm roundId={round.id} />
       </section>
     );
   }
 
   // 3. Attending the meeting?
-  if (!ballot) {
+  if (ballot.attending === null) {
     return (
       <section className="max-w-2xl space-y-6">
-        <VotingAs roundId={round.id} name={member.name} />
+        <VotingAs roundId={round.id} name={ballot.name} />
         <Heading name={round.name} count={round.applicants.length} />
         <Guidelines />
         <div className="space-y-3">
@@ -206,7 +209,7 @@ export default async function VotePage({
   if (showSummary) {
     return (
       <section className="max-w-3xl">
-        <VotingAs roundId={round.id} name={member.name} />
+        <VotingAs roundId={round.id} name={ballot.name} />
         <Heading name={round.name} count={applicants.length} />
         <Summary roundId={round.id} applicants={applicants} ballot={ballot} />
       </section>
@@ -222,7 +225,7 @@ export default async function VotePage({
 
   return (
     <section className="max-w-4xl">
-      <VotingAs roundId={round.id} name={member.name} />
+      <VotingAs roundId={round.id} name={ballot.name} />
       <div className="mb-6 space-y-2">
         <div className="flex flex-wrap justify-between gap-2 text-sm">
           <span>
@@ -246,7 +249,7 @@ export default async function VotePage({
         key={applicant.id}
         roundId={round.id}
         applicant={toPublic(applicant)}
-        attending={ballot.attending}
+        attending={ballot.attending === true}
         initialVotes={ballot.votes}
         initialFeedback={ballot.feedback[applicant.id] ?? ""}
         backHref={index > 0 ? `/vote/${round.id}?applicant=${index}` : `/vote/${round.id}?view=summary`}

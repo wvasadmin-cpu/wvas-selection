@@ -24,13 +24,22 @@ export type Applicant = {
   artworks: Artwork[];
 };
 
-/** One committee member's answers for a round. */
+/** One voter's answers for a round, stored per device (browser). */
 export type Ballot = {
-  memberId: string;
-  attending: boolean;
+  /** Random id of the device the votes were made on. */
+  voterId: string;
+  /** The name as the voter typed it. */
+  name: string;
+  /** The committee member that name matched, or null if it didn't match anyone. */
+  memberId: string | null;
+  /** null until they've answered the attending question. */
+  attending: boolean | null;
   /** Keyed by artwork id. */
   votes: Record<string, Vote>;
   /** Keyed by applicant id. */
   feedback: Record<string, string>;
   updatedAt: string;
 };
+
+/** The parts of a ballot that say what someone has answered. */
+export type Answers = Pick<Ballot, "attending" | "votes" | "feedback">;

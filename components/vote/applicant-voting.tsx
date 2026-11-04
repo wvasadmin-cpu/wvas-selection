@@ -74,10 +74,7 @@ export default function ApplicantVoting({
 
   const missing = attending
     ? []
-    : whatsMissing(
-        { ...applicant, fullName: "" },
-        { memberId: "", attending: false, votes, feedback: { [applicant.id]: feedback }, updatedAt: "" },
-      );
+    : whatsMissing(applicant, { attending: false, votes, feedback: { [applicant.id]: feedback } });
 
   const go = async (href: string, requireComplete: boolean) => {
     if (requireComplete && missing.length > 0) {

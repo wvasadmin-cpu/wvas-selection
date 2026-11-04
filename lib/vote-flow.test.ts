@@ -21,7 +21,7 @@ const applicant = (id: string, missingPhoto?: number): Applicant => ({
 
 const applicants = [applicant("ab"), applicant("cd", 3)];
 
-const ballot = (partial: Partial<Ballot>): Ballot => ({ ...newBallot("m1", false, "t"), ...partial });
+const ballot = (partial: Partial<Ballot>): Ballot => ({ ...newBallot("d1", "Alex Example", "m1", "t"), attending: false, ...partial });
 
 describe("progress", () => {
   it("counts applicants with every pictured artwork voted and feedback given", () => {
@@ -32,6 +32,10 @@ describe("progress", () => {
 
   it("is complete straight away for attendees", () => {
     expect(firstIncomplete(applicants, ballot({ attending: true }))).toBe(-1);
+  });
+
+  it("isn't complete before the attending question is answered", () => {
+    expect(firstIncomplete(applicants, ballot({ attending: null }))).toBe(0);
   });
 
   it("starts at the first applicant with no ballot", () => {

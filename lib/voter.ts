@@ -1,19 +1,15 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { hasVoterAccess } from "./access";
-import { claimMatches } from "./claims";
-import type { CommitteeMember } from "./committee";
 import type { Round } from "./rounds";
-import { getBallot, getClaim, getCommittee, getRound } from "./store";
+import { getBallot, getRound } from "./store";
 import type { Ballot } from "./types";
 
-// Who is voting. The member's choice of name is remembered in a cookie on
-// their device; this is a convenience, not a password (the passcode and the
-// unguessable link keep outsiders out).
+// Who is voting. Each browser gets a random device id (in a cookie) and its
+// votes are stored under that id, labelled with the name typed in. Votes are
+// only ever shown back to the device that made them, so typing someone
+// else's name never reveals or changes their votes.
 
-export const memberCookieName = (roundId: string) => `wvas-member-${roundId}`;
-
-/** A random id for this browser, used to lock each name to one device. */
 export const DEVICE_COOKIE = "wvas-device";
 
 export const COOKIE_OPTIONS = {
@@ -21,14 +17,13 @@ export const COOKIE_OPTIONS = {
   secure: true,
   sameSite: "lax" as const,
   path: "/",
-  maxAge: 60 * 60 * 24 * 120, // about four months
+  maxAge: 60 * 60 * 24 * 400, // about 13 months
 };
 
 export type VoterContext = {
   round: Round;
   access: boolean;
-  members: CommitteeMember[];
-  member: CommitteeMember | null;
+  /** This device's ballot for the round, or null before they've given their name. */
   ballot: Ballot | null;
 };
 
@@ -36,25 +31,17 @@ export async function getVoterContext(roundId: string): Promise<VoterContext | n
   const round = await getRound(roundId);
   if (!round) return null;
   const access = await hasVoterAccess(round);
-  if (!access) return { round, access, members: [], member: null, ballot: null };
-
-  const jar = await cookies();
-  const members = await getCommittee();
-  const memberId = jar.get(memberCookieName(roundId))?.value;
-  const chosen = members.find((m) => m.id === memberId) ?? null;
-
-  // The chosen name only counts on the device it's locked to; otherwise the
-  // voter is asked to choose again (and is stopped if the name is taken).
-  const member = chosen && claimMatches(await getClaim(roundId, chosen.id), jar.get(DEVICE_COOKIE)?.value) ? chosen : null;
-  const ballot = member ? await getBallot(roundId, member.id) : null;
-  return { round, access, members, member, ballot };
+  if (!access) return { round, access, ballot: null };
+  const deviceId = (await cookies()).get(DEVICE_COOKIE)?.value;
+  const ballot = deviceId ? await getBallot(roundId, deviceId) : null;
+  return { round, access, ballot };
 }
 
-/** For voting actions: the round must be open and the voter identified. */
-export async function requireVoter(roundId: string): Promise<{ round: Round; member: CommitteeMember; ballot: Ballot | null }> {
+/** For voting actions: the round must be open and this device must have given a name. */
+export async function requireVoter(roundId: string): Promise<{ round: Round; ballot: Ballot }> {
   const ctx = await getVoterContext(roundId);
   if (!ctx || !ctx.access) throw new Error("No access to this round.");
   if (ctx.round.status !== "open") throw new Error("This round has closed.");
-  if (!ctx.member) throw new Error("Please choose your name first.");
-  return { round: ctx.round, member: ctx.member, ballot: ctx.ballot };
+  if (!ctx.ballot) throw new Error("Please enter your name first.");
+  return { round: ctx.round, ballot: ctx.ballot };
 }

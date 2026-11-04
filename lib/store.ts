@@ -4,7 +4,6 @@ import type { CommitteeMember } from "./committee";
 import type { RoundCorrections } from "./corrections";
 import { roundKey, summaryOf, type Round, type RoundSummary } from "./rounds";
 import type { Ballot } from "./types";
-import type { Claim } from "./claims";
 
 // Site storage (Netlify Blobs): committee list, corrections, published rounds
 // and their resized photos (votes to come). Strong consistency so a page reads
@@ -76,36 +75,19 @@ export async function getImage(roundId: string, artworkId: string): Promise<Arra
   return withTimeout(store().get(key, { type: "arrayBuffer" }), `read ${key}`);
 }
 
-// Ballots: one per committee member per round
-export const getBallot = (roundId: string, memberId: string) =>
-  readJSON<Ballot | null>(`ballot/${roundId}/${memberId}`, null);
+// Ballots: one per device per round (keyed by the device's random id)
+export const getBallot = (roundId: string, voterId: string) =>
+  readJSON<Ballot | null>(`ballot/${roundId}/${voterId}`, null);
 
-export const saveBallot = (roundId: string, ballot: Ballot) => writeJSON(`ballot/${roundId}/${ballot.memberId}`, ballot);
+export const saveBallot = (roundId: string, ballot: Ballot) => writeJSON(`ballot/${roundId}/${ballot.voterId}`, ballot);
 
 export async function listBallots(roundId: string): Promise<Ballot[]> {
   const { blobs } = await withTimeout(store().list({ prefix: `ballot/${roundId}/` }), "list ballots");
   const ballots = await Promise.all(blobs.map((b) => readJSON<Ballot | null>(b.key, null)));
-  return ballots.filter((b): b is Ballot => b !== null);
+  // Ballots from before votes were stored per device lack a voterId: skip them.
+  return ballots.filter((b): b is Ballot => b !== null && typeof b.voterId === "string");
 }
 
-export async function deleteBallot(roundId: string, memberId: string): Promise<void> {
-  await withTimeout(store().delete(`ballot/${roundId}/${memberId}`), "delete ballot");
-}
-
-// Name locks: which device holds each member's name in a round
-export const getClaim = (roundId: string, memberId: string) =>
-  readJSON<Claim | null>(`claim/${roundId}/${memberId}`, null);
-
-export const saveClaim = (roundId: string, memberId: string, claim: Claim) =>
-  writeJSON(`claim/${roundId}/${memberId}`, claim);
-
-export async function deleteClaim(roundId: string, memberId: string): Promise<void> {
-  await withTimeout(store().delete(`claim/${roundId}/${memberId}`), "delete claim");
-}
-
-/** Member ids whose names are locked to a device in this round. */
-export async function listClaimedMemberIds(roundId: string): Promise<string[]> {
-  const prefix = `claim/${roundId}/`;
-  const { blobs } = await withTimeout(store().list({ prefix }), "list claims");
-  return blobs.map((b) => b.key.slice(prefix.length));
+export async function deleteBallot(roundId: string, voterId: string): Promise<void> {
+  await withTimeout(store().delete(`ballot/${roundId}/${voterId}`), "delete ballot");
 }

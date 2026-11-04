@@ -2,7 +2,7 @@
 
 import { clearBallotAction } from "@/actions/results";
 
-export default function ClearBallotButton({ roundId, memberId, name }: { roundId: string; memberId: string; name: string }) {
+export default function ClearBallotButton({ roundId, ballotIds, name }: { roundId: string; ballotIds: string[]; name: string }) {
   return (
     <form
       action={clearBallotAction}
@@ -12,7 +12,7 @@ export default function ClearBallotButton({ roundId, memberId, name }: { roundId
       }}
     >
       <input type="hidden" name="roundId" value={roundId} />
-      <input type="hidden" name="memberId" value={memberId} />
+      <input type="hidden" name="ballotIds" value={ballotIds.join(",")} />
       <button type="submit" className="link link-hover text-error text-xs">
         clear
       </button>
