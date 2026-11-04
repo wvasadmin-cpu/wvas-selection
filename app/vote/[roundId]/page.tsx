@@ -74,35 +74,39 @@ function AttendingButtons({ roundId, current }: { roundId: string; current?: boo
   );
 }
 
+function Thumbs({ roundId, applicant }: { roundId: string; applicant: Applicant }) {
+  return (
+    <span className="flex gap-2 flex-1">
+      {applicant.artworks
+        .filter((art) => art.hasImage)
+        .slice(0, 4)
+        .map((art) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={art.id}
+            src={`/api/images/${roundId}/${art.id}`}
+            alt=""
+            loading="lazy"
+            className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded bg-base-200"
+          />
+        ))}
+    </span>
+  );
+}
+
+/** The applicants as a teaser on the first screen: viewing opens once the attending question is answered. */
 function ApplicantPreviews({ roundId, applicants }: { roundId: string; applicants: Applicant[] }) {
   return (
     <ul className="space-y-3">
-      {applicants.map((a, i) => {
-        const thumbs = a.artworks.filter((art) => art.hasImage).slice(0, 4);
-        return (
-          <li key={a.id}>
-            <Link
-              href={`/vote/${roundId}?applicant=${i + 1}`}
-              className="flex flex-wrap items-center gap-4 p-3 rounded-box bg-base-100 border border-base-300 hover:border-primary transition-colors"
-            >
-              <strong className="min-w-28">Applicant {a.initials}</strong>
-              <span className="flex gap-2 flex-1">
-                {thumbs.map((art) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={art.id}
-                    src={`/api/images/${roundId}/${art.id}`}
-                    alt=""
-                    loading="lazy"
-                    className="w-14 h-14 object-cover rounded bg-base-200"
-                  />
-                ))}
-              </span>
-              <span className="btn btn-sm">View</span>
-            </Link>
-          </li>
-        );
-      })}
+      {applicants.map((a) => (
+        <li key={a.id} className="flex flex-wrap items-center gap-4 p-3 rounded-box bg-base-100 border border-base-300">
+          <strong className="min-w-28">Applicant {a.initials}</strong>
+          <Thumbs roundId={roundId} applicant={a} />
+          <span className="btn btn-sm btn-disabled" aria-disabled="true">
+            View
+          </span>
+        </li>
+      ))}
     </ul>
   );
 }
@@ -133,8 +137,8 @@ function Summary({ roundId, applicants, ballot }: { roundId: string; applicants:
           const yes = a.artworks.filter((art) => ballot.votes[art.id] === "yes").length;
           const no = a.artworks.filter((art) => ballot.votes[art.id] === "no").length;
           return (
-            <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-box bg-base-100 border border-base-300">
-              <span>
+            <li key={a.id} className="flex flex-wrap items-center gap-4 p-3 rounded-box bg-base-100 border border-base-300">
+              <span className="min-w-28">
                 <strong>Applicant {a.initials}</strong>{" "}
                 <span className="text-sm text-base-content/70">
                   {ballot.attending
@@ -146,6 +150,7 @@ function Summary({ roundId, applicants, ballot }: { roundId: string; applicants:
                       : `${yes} yes, ${no} no, feedback given`}
                 </span>
               </span>
+              <Thumbs roundId={roundId} applicant={a} />
               <Link href={`/vote/${roundId}?applicant=${i + 1}`} className="btn btn-sm">
                 {ballot.attending ? "View" : missing.length ? "Continue" : "Change"}
               </Link>
@@ -214,10 +219,10 @@ export default async function VotePage({
 
   const applicants = round.applicants;
   const requested = Number(query.applicant);
-  const browsing = ballot.attending === null;
 
-  // 3. Attending the meeting? (with the applicants below, to tempt a look)
-  if (browsing && !(requested >= 1 && requested <= applicants.length)) {
+  // 3. Attending the meeting? Asked before any applicant can be viewed, with
+  // the applicants shown below as a teaser.
+  if (ballot.attending === null) {
     return (
       <section className="max-w-2xl space-y-8">
         <div>
@@ -232,12 +237,14 @@ export default async function VotePage({
             feedback for each applicant. Thank you.
           </p>
           <AttendingButtons roundId={round.id} />
+          <p className="text-sm text-base-content/70">You can change your answer later.</p>
         </div>
         {applicants.length > 0 && (
           <div className="space-y-3 pt-6 border-t border-base-300">
             <p className="font-semibold text-lg">Take a look at the applicants</p>
             <p className="text-base-content/80">
-              Everyone is encouraged to view the artwork beforehand, whether or not you&apos;re attending.
+              Everyone is encouraged to view the artwork beforehand, whether or not you&apos;re attending. Please answer
+              the question above first.
             </p>
             <ApplicantPreviews roundId={round.id} applicants={applicants} />
           </div>
@@ -294,18 +301,13 @@ export default async function VotePage({
         key={applicant.id}
         roundId={round.id}
         applicant={toPublic(applicant)}
-        // Look-only (no Yes/No) for attendees, and for anyone browsing before answering the attending question.
-        attending={ballot.attending !== false}
+        attending={ballot.attending === true}
         initialVotes={ballot.votes}
         initialFeedback={ballot.feedback[applicant.id] ?? ""}
-        backHref={
-          index > 0 ? `/vote/${round.id}?applicant=${index}` : browsing ? `/vote/${round.id}` : `/vote/${round.id}?view=summary`
-        }
+        backHref={index > 0 ? `/vote/${round.id}?applicant=${index}` : `/vote/${round.id}?view=summary`}
         backLabel={index > 0 ? "← Back" : "← Back to start"}
-        nextHref={
-          isLast ? (browsing ? `/vote/${round.id}` : `/vote/${round.id}?view=summary`) : `/vote/${round.id}?applicant=${index + 2}`
-        }
-        nextLabel={isLast ? (browsing ? "Back to start" : "Finish") : "Next applicant →"}
+        nextHref={isLast ? `/vote/${round.id}?view=summary` : `/vote/${round.id}?applicant=${index + 2}`}
+        nextLabel={isLast ? "Finish" : "Next applicant →"}
       />
     </section>
   );
