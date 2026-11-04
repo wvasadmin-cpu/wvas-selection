@@ -16,7 +16,9 @@ export type GalleryItem = {
 // arrow keys and swipe to move between photos, and Esc or ✕ to close.
 export default function ArtworkGallery({ items }: { items: GalleryItem[] }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const touchStartX = useRef<number | null>(null);
+  // Swipe tracking. A swipe is one finger moving sideways; anything that
+  // involves two fingers (a pinch) is ignored, as is sliding while zoomed in.
+  const swipe = useRef<{ x: number; y: number; multi: boolean } | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const viewable = items.map((item, i) => ({ item, i })).filter(({ item }) => item.src);
@@ -77,13 +79,28 @@ export default function ArtworkGallery({ items }: { items: GalleryItem[] }) {
           // A click on the dark background (not the photo or buttons) closes it.
           if (e.target === e.currentTarget) close();
         }}
-        onTouchStart={(e) => (touchStartX.current = e.touches[0].clientX)}
-        onTouchEnd={(e) => {
-          if (touchStartX.current === null) return;
-          const dx = e.changedTouches[0].clientX - touchStartX.current;
-          if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
-          touchStartX.current = null;
+        onTouchStart={(e) => {
+          if (e.touches.length > 1) {
+            if (swipe.current) swipe.current.multi = true;
+            else swipe.current = { x: 0, y: 0, multi: true };
+            return;
+          }
+          swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, multi: false };
         }}
+        onTouchMove={(e) => {
+          if (e.touches.length > 1 && swipe.current) swipe.current.multi = true;
+        }}
+        onTouchEnd={(e) => {
+          const start = swipe.current;
+          if (!start || e.touches.length > 0) return; // wait until every finger is lifted
+          swipe.current = null;
+          const zoomed = (window.visualViewport?.scale ?? 1) > 1.05;
+          if (start.multi || zoomed) return;
+          const dx = e.changedTouches[0].clientX - start.x;
+          const dy = e.changedTouches[0].clientY - start.y;
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+        }}
+        onTouchCancel={() => (swipe.current = null)}
         aria-label={current ? `${current.title}, enlarged` : "Enlarged photo"}
         className="m-0 h-dvh w-screen max-h-none max-w-none bg-black/95 p-0 backdrop:bg-black/80"
       >
