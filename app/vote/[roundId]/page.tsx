@@ -54,7 +54,7 @@ function VotingAs({ roundId, name }: { roundId: string; name: string }) {
         Voting as <strong>{name}</strong>
       </span>
       <button type="submit" className="link link-hover text-base-content/70">
-        Not you? Start as someone else
+        Not you? Start again
       </button>
     </form>
   );
@@ -76,7 +76,7 @@ function AttendingButtons({ roundId, current }: { roundId: string; current?: boo
 
 function Thumbs({ roundId, applicant }: { roundId: string; applicant: Applicant }) {
   return (
-    <span className="flex gap-2 flex-1">
+    <span className="flex gap-2 shrink-0">
       {applicant.artworks
         .filter((art) => art.hasImage)
         .slice(0, 4)
@@ -100,9 +100,9 @@ function ApplicantPreviews({ roundId, applicants }: { roundId: string; applicant
     <ul className="space-y-3">
       {applicants.map((a) => (
         <li key={a.id} className="flex flex-wrap items-center gap-4 p-3 rounded-box bg-base-100 border border-base-300">
-          <strong className="min-w-28">Applicant {a.initials}</strong>
+          <strong className="flex-1 min-w-28">Applicant {a.initials}</strong>
           <Thumbs roundId={roundId} applicant={a} />
-          <span className="btn btn-sm btn-disabled" aria-disabled="true">
+          <span className="btn btn-sm btn-disabled shrink-0" aria-disabled="true">
             View
           </span>
         </li>
@@ -138,20 +138,20 @@ function Summary({ roundId, applicants, ballot }: { roundId: string; applicants:
           const no = a.artworks.filter((art) => ballot.votes[art.id] === "no").length;
           return (
             <li key={a.id} className="flex flex-wrap items-center gap-4 p-3 rounded-box bg-base-100 border border-base-300">
-              <span className="min-w-28">
-                <strong>Applicant {a.initials}</strong>{" "}
-                <span className="text-sm text-base-content/70">
+              <div className="flex-1 min-w-48">
+                <strong>Applicant {a.initials}</strong>
+                <p className="text-sm text-base-content/70">
                   {ballot.attending
                     ? ballot.feedback[a.id]
-                      ? "comment left"
+                      ? "Comment left"
                       : ""
                     : missing.length
-                      ? `still needs ${missing.join(" and ")}`
+                      ? `Still needs ${missing.join(" and ")}`
                       : `${yes} yes, ${no} no, feedback given`}
-                </span>
-              </span>
+                </p>
+              </div>
               <Thumbs roundId={roundId} applicant={a} />
-              <Link href={`/vote/${roundId}?applicant=${i + 1}`} className="btn btn-sm">
+              <Link href={`/vote/${roundId}?applicant=${i + 1}`} className="btn btn-sm shrink-0">
                 {ballot.attending ? "View" : missing.length ? "Continue" : "Change"}
               </Link>
             </li>
