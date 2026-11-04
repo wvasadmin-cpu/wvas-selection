@@ -74,6 +74,39 @@ function AttendingButtons({ roundId, current }: { roundId: string; current?: boo
   );
 }
 
+function ApplicantPreviews({ roundId, applicants }: { roundId: string; applicants: Applicant[] }) {
+  return (
+    <ul className="space-y-3">
+      {applicants.map((a, i) => {
+        const thumbs = a.artworks.filter((art) => art.hasImage).slice(0, 4);
+        return (
+          <li key={a.id}>
+            <Link
+              href={`/vote/${roundId}?applicant=${i + 1}`}
+              className="flex flex-wrap items-center gap-4 p-3 rounded-box bg-base-100 border border-base-300 hover:border-primary transition-colors"
+            >
+              <strong className="min-w-28">Applicant {a.initials}</strong>
+              <span className="flex gap-2 flex-1">
+                {thumbs.map((art) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={art.id}
+                    src={`/api/images/${roundId}/${art.id}`}
+                    alt=""
+                    loading="lazy"
+                    className="w-14 h-14 object-cover rounded bg-base-200"
+                  />
+                ))}
+              </span>
+              <span className="btn btn-sm">View</span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function Summary({ roundId, applicants, ballot }: { roundId: string; applicants: Applicant[]; ballot: Ballot }) {
   const { done, total } = progressOf(applicants, ballot);
   const allDone = done === total;
@@ -179,13 +212,18 @@ export default async function VotePage({
     );
   }
 
-  // 3. Attending the meeting?
-  if (ballot.attending === null) {
+  const applicants = round.applicants;
+  const requested = Number(query.applicant);
+  const browsing = ballot.attending === null;
+
+  // 3. Attending the meeting? (with the applicants below, to tempt a look)
+  if (browsing && !(requested >= 1 && requested <= applicants.length)) {
     return (
-      <section className="max-w-2xl space-y-6">
-        <VotingAs roundId={round.id} name={ballot.name} />
-        <Heading name={round.name} count={round.applicants.length} />
-        <Guidelines />
+      <section className="max-w-2xl space-y-8">
+        <div>
+          <VotingAs roundId={round.id} name={ballot.name} />
+          <Heading name={round.name} count={applicants.length} />
+        </div>
         <div className="space-y-3">
           <p className="font-semibold text-lg">Are you attending the committee meeting?</p>
           <p className="text-base-content/80">
@@ -195,16 +233,23 @@ export default async function VotePage({
           </p>
           <AttendingButtons roundId={round.id} />
         </div>
+        {applicants.length > 0 && (
+          <div className="space-y-3 pt-6 border-t border-base-300">
+            <p className="font-semibold text-lg">Take a look at the applicants</p>
+            <p className="text-base-content/80">
+              Everyone is encouraged to view the artwork beforehand, whether or not you&apos;re attending.
+            </p>
+            <ApplicantPreviews roundId={round.id} applicants={applicants} />
+          </div>
+        )}
       </section>
     );
   }
 
-  const applicants = round.applicants;
-  const requested = Number(query.applicant);
   const showSummary =
     query.view === "summary" ||
     applicants.length === 0 ||
-    (!requested && (ballot.attending || firstIncomplete(applicants, ballot) === -1));
+    (!requested && (ballot.attending === true || firstIncomplete(applicants, ballot) === -1));
 
   if (showSummary) {
     return (
@@ -231,7 +276,7 @@ export default async function VotePage({
           <span>
             {round.name} · Applicant {index + 1} of {total}
           </span>
-          {!ballot.attending && (
+          {ballot.attending === false && (
             <span className="text-base-content/70">
               {done} of {total} done
             </span>
@@ -249,13 +294,18 @@ export default async function VotePage({
         key={applicant.id}
         roundId={round.id}
         applicant={toPublic(applicant)}
-        attending={ballot.attending === true}
+        // Look-only (no Yes/No) for attendees, and for anyone browsing before answering the attending question.
+        attending={ballot.attending !== false}
         initialVotes={ballot.votes}
         initialFeedback={ballot.feedback[applicant.id] ?? ""}
-        backHref={index > 0 ? `/vote/${round.id}?applicant=${index}` : `/vote/${round.id}?view=summary`}
+        backHref={
+          index > 0 ? `/vote/${round.id}?applicant=${index}` : browsing ? `/vote/${round.id}` : `/vote/${round.id}?view=summary`
+        }
         backLabel={index > 0 ? "← Back" : "← Back to start"}
-        nextHref={isLast ? `/vote/${round.id}?view=summary` : `/vote/${round.id}?applicant=${index + 2}`}
-        nextLabel={isLast ? "Finish" : "Next applicant →"}
+        nextHref={
+          isLast ? (browsing ? `/vote/${round.id}` : `/vote/${round.id}?view=summary`) : `/vote/${round.id}?applicant=${index + 2}`
+        }
+        nextLabel={isLast ? (browsing ? "Back to start" : "Finish") : "Next applicant →"}
       />
     </section>
   );
