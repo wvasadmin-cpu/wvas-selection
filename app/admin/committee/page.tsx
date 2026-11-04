@@ -19,7 +19,8 @@ export default async function CommitteePage() {
       <h2 className="font-display text-3xl mb-2">Committee list</h2>
       <p className="mb-6 text-base-content/80">
         Voters type their own name; it&apos;s matched to this list (allowing for short forms like Sue for Susan), so the
-        results page can show who hasn&apos;t voted yet. Voters never see this list.
+        results page can show who hasn&apos;t voted yet. Names that don&apos;t match anyone here can&apos;t vote, so add new
+        committee members before sending the link. Voters never see this list.
       </p>
 
       <div className="grid gap-10 md:grid-cols-2">

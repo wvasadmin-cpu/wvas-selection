@@ -35,6 +35,19 @@ export async function enterNameAction(_prev: VoteFormState, formData: FormData):
   const typed = cleanTypedName(String(formData.get("first") ?? ""), String(formData.get("surname") ?? ""));
   if (!typed.first || !typed.surname) return { ok: false, message: "Please enter your first name and surname." };
 
+  // Only committee members may vote: refuse names that don't match the list.
+  const members = await getCommittee();
+  if (members.length === 0) {
+    return { ok: false, message: "The committee list hasn't been set up yet. Please contact the Membership Secretary." };
+  }
+  const member = matchMember(typed, members);
+  if (!member) {
+    return {
+      ok: false,
+      message: `We couldn't find ${displayName(typed)} on the committee list. Please check the spelling, or contact the Membership Secretary.`,
+    };
+  }
+
   const jar = await cookies();
   let deviceId = jar.get(DEVICE_COOKIE)?.value;
   if (!deviceId) {
@@ -42,14 +55,13 @@ export async function enterNameAction(_prev: VoteFormState, formData: FormData):
     jar.set(DEVICE_COOKIE, deviceId, COOKIE_OPTIONS);
   }
 
-  const member = matchMember(typed, await getCommittee());
   const existing = await getBallot(roundId, deviceId);
   const name = displayName(typed);
   await saveBallot(
     roundId,
     existing
-      ? { ...existing, name, memberId: member?.id ?? null, updatedAt: new Date().toISOString() }
-      : newBallot(deviceId, name, member?.id ?? null),
+      ? { ...existing, name, memberId: member.id, updatedAt: new Date().toISOString() }
+      : newBallot(deviceId, name, member.id),
   );
   revalidatePath(votePath(roundId));
   return { ok: true, message: "" };
