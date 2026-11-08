@@ -151,7 +151,7 @@ export default function ApplicantVoting({
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
           onBlur={saveFeedback}
-          rows={5}
+          rows={3}
           maxLength={2000}
           aria-describedby={attending ? undefined : "feedback-help"}
           className="textarea textarea-bordered w-full"

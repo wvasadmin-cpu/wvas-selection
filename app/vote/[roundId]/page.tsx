@@ -207,10 +207,33 @@ export default async function VotePage({
     return (
       <section className="max-w-2xl space-y-6">
         <Heading name={round.name} count={round.applicants.length} />
-        <p>
-          Welcome. Committee members not attending the meeting are asked to view each applicant&apos;s work and vote
-          here. Please start by entering your name.
-        </p>
+        <div className="space-y-3 leading-relaxed">
+          <p>
+            <strong>Welcome, committee members,</strong> to a preview of the artwork from exhibitor applicants for the
+            next committee meeting.
+          </p>
+          <p>
+            This lets you see the artwork before the meeting. If you can&apos;t attend in person, it also lets you vote on
+            each artwork and offer constructive comments on each applicant&apos;s overall submission.
+          </p>
+          <p>
+            To begin, enter your first name and surname below and press <strong>Continue</strong>. You&apos;ll then be
+            asked whether you&apos;re attending the meeting:
+          </p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Attending:</strong> please take the opportunity to look at the artwork beforehand. You won&apos;t
+              vote online, but you can leave comments.
+            </li>
+            <li>
+              <strong>Not attending:</strong> please vote Yes or No on each artwork and leave feedback for each applicant.
+            </li>
+          </ul>
+          <p>
+            You don&apos;t have to finish in one go. Your answers are saved as you go, so just open the link again on the
+            same device to carry on or change your answers.
+          </p>
+        </div>
         <ViewingTip />
         <NameForm roundId={round.id} />
       </section>
