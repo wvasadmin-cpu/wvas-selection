@@ -3,19 +3,35 @@ import { randomBytes } from "node:crypto";
 import { fetchApplicationRecords } from "./airtable";
 import { applicantsForRound, isIncomplete } from "./applicants";
 import { applyCorrection, isExcluded } from "./corrections";
-import { downloadAndResize, inBatches } from "./images";
+import { downloadAndResize } from "./images";
+import { nextCopied, photosToCopy } from "./photo-plan";
 import type { Round } from "./rounds";
 import { getCorrections, getRound, saveImage, saveRound } from "./store";
 import type { Applicant } from "./types";
 
-export type PublishResult = { round: Round; photoProblems: number };
+// Netlify stops a request after about 26 seconds, so each step copies photos
+// for at most this long; the admin page then runs further steps until done.
+const PHOTO_TIME_BUDGET_MS = 10_000;
+const PHOTOS_AT_ONCE = 4;
+
+export type PublishStep = {
+  round: Round;
+  /** Photos that couldn't be copied this step (tried again on the next refresh). */
+  photoProblems: number;
+  /** Photos still waiting to be copied: run another step. */
+  remaining: number;
+  photosReady: number;
+  photosTotal: number;
+};
 
 /**
- * Build a round from Airtable plus corrections and store it with its photos.
- * With an existing round id this is a refresh: the id (and so the link),
- * status, passcode and votes are kept.
+ * One step of publishing or refreshing a round: rebuild it from Airtable plus
+ * corrections and copy any new or changed photos, stopping in good time. With
+ * an existing round id this is a refresh: the id (and so the link), status,
+ * passcode and votes are kept.
  */
-export async function publishRound(name: string, options: { passcode?: string; existingId?: string }): Promise<PublishResult> {
+export async function publishStep(name: string, options: { passcode?: string; existingId?: string }): Promise<PublishStep> {
+  const started = Date.now();
   const [records, corrections, existing] = await Promise.all([
     fetchApplicationRecords(),
     getCorrections(name),
@@ -25,26 +41,38 @@ export async function publishRound(name: string, options: { passcode?: string; e
   const entries = applicantsForRound(records, name).filter(
     (e) => !isIncomplete(e.applicant) && !isExcluded(corrections[e.applicant.id]),
   );
-
   const id = existing?.id ?? randomBytes(18).toString("base64url");
 
-  // Download and resize every photo; one failing doesn't stop the rest.
+  const sources = entries.flatMap((e) => e.images);
+  const todo = photosToCopy(sources, existing?.photos);
+  const copiedNow: typeof sources = [];
   const failed = new Set<string>();
-  const photos = entries.flatMap((e) => e.images);
-  await inBatches(photos, 6, async (photo) => {
-    try {
-      await saveImage(id, photo.artworkId, await downloadAndResize(photo.url));
-    } catch (err) {
-      console.error(`Photo for ${photo.artworkId} failed`, err);
-      failed.add(photo.artworkId);
-    }
-  });
+  let attempted = 0;
+
+  while (attempted < todo.length && Date.now() - started < PHOTO_TIME_BUDGET_MS) {
+    const batch = todo.slice(attempted, attempted + PHOTOS_AT_ONCE);
+    attempted += batch.length;
+    await Promise.all(
+      batch.map(async (photo) => {
+        try {
+          await saveImage(id, photo.artworkId, await downloadAndResize(photo.url));
+          copiedNow.push(photo);
+        } catch (err) {
+          console.error(`Photo for ${photo.artworkId} failed`, err);
+          failed.add(photo.artworkId);
+        }
+      }),
+    );
+  }
+
+  const photos = nextCopied(sources, existing?.photos, copiedNow);
 
   const applicants: Applicant[] = entries.map(({ applicant }) => {
     const corrected = applyCorrection(applicant, corrections[applicant.id]);
     return {
       ...corrected,
-      artworks: corrected.artworks.map((a) => ({ ...a, hasImage: a.hasImage && !failed.has(a.id) })),
+      // Only show photos that are actually in storage and up to date.
+      artworks: corrected.artworks.map((a) => ({ ...a, hasImage: a.hasImage && photos[a.id] !== undefined })),
     };
   });
 
@@ -58,7 +86,15 @@ export async function publishRound(name: string, options: { passcode?: string; e
     refreshedAt: now,
     applicantCount: applicants.length,
     applicants,
+    photos,
   };
   await saveRound(round);
-  return { round, photoProblems: failed.size };
+
+  return {
+    round,
+    photoProblems: failed.size,
+    remaining: todo.length - attempted,
+    photosReady: Object.keys(photos).length,
+    photosTotal: sources.length,
+  };
 }

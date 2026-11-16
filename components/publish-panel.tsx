@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 import {
-  publishAction,
-  refreshAction,
+  publishStepAction,
+  refreshStepAction,
   setPasscodeAction,
   setStatusAction,
   type ActionState,
+  type StepState,
 } from "@/actions/rounds";
 import ActionMessage from "@/components/action-message";
 import type { RoundSummary } from "@/lib/rounds";
@@ -16,11 +18,52 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" });
 }
 
-function NotPublished({ roundName }: { roundName: string }) {
-  const [state, action, pending] = useActionState<ActionState, FormData>(publishAction, null);
+/**
+ * Publishing and refreshing run in steps (each copies photos for a few
+ * seconds, to stay inside Netlify's time limit); this keeps going until all
+ * photos are copied, showing progress, and turns any failure into a message.
+ */
+function useSteps(roundName: string) {
+  const router = useRouter();
+  const [state, setState] = useState<ActionState>(null);
+  const [busy, setBusy] = useState(false);
+
+  const run = async (first: () => Promise<StepState>) => {
+    setBusy(true);
+    setState({ ok: true, message: "Working… (this can take a minute when there are new photos)" });
+    try {
+      let result = await first();
+      setState(result);
+      for (let steps = 1; result.ok && result.remaining > 0 && steps < 30; steps++) {
+        result = await refreshStepAction(roundName);
+        setState(result);
+      }
+    } catch {
+      setState({
+        ok: false,
+        message: "The website took too long to reply. Nothing is lost: click Refresh from Airtable to carry on.",
+      });
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
+  };
+  return { state, busy, run };
+}
+
+type Steps = ReturnType<typeof useSteps>;
+
+function NotPublished({ roundName, steps }: { roundName: string; steps: Steps }) {
+  const { state, busy: pending, run } = steps;
   return (
-    <form action={action} className="space-y-3">
-      <input type="hidden" name="round" value={roundName} />
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const passcode = String(new FormData(e.currentTarget).get("passcode") ?? "");
+        run(() => publishStepAction(roundName, passcode));
+      }}
+      className="space-y-3"
+    >
       <p>
         When everything below looks right, publish the round. This copies the photos and creates the voting link to send
         to the committee.
@@ -52,8 +95,8 @@ function NotPublished({ roundName }: { roundName: string }) {
   );
 }
 
-function Published({ round, voteUrl }: { round: RoundSummary; voteUrl: string }) {
-  const [refreshState, refresh, refreshing] = useActionState<ActionState, FormData>(refreshAction, null);
+function Published({ round, voteUrl, steps }: { round: RoundSummary; voteUrl: string; steps: Steps }) {
+  const { state: refreshState, busy: refreshing, run } = steps;
   const [passState, savePasscode, savingPass] = useActionState<ActionState, FormData>(setPasscodeAction, null);
   const [copied, setCopied] = useState(false);
   const open = round.status === "open";
@@ -114,12 +157,9 @@ function Published({ round, voteUrl }: { round: RoundSummary; voteUrl: string })
       </form>
 
       <div className="flex flex-wrap items-center gap-3">
-        <form action={refresh}>
-          <input type="hidden" name="round" value={round.name} />
-          <button type="submit" className="btn btn-sm" disabled={refreshing}>
-            {refreshing ? "Refreshing…" : "Refresh from Airtable"}
-          </button>
-        </form>
+        <button type="button" className="btn btn-sm" disabled={refreshing} onClick={() => run(() => refreshStepAction(round.name))}>
+          {refreshing ? "Refreshing…" : "Refresh from Airtable"}
+        </button>
         <form
           action={setStatusAction}
           onSubmit={(e) => {
@@ -150,11 +190,18 @@ export default function PublishPanel({
   published: RoundSummary | null;
   voteUrl: string;
 }) {
+  // Held here so progress carries on showing when the round switches from
+  // "not published" to "published" part-way through.
+  const steps = useSteps(roundName);
   return (
     <div className="card bg-base-100 border-2 border-secondary mb-10">
       <div className="card-body">
         <h3 className="card-title font-display">Publish</h3>
-        {published ? <Published round={published} voteUrl={voteUrl} /> : <NotPublished roundName={roundName} />}
+        {published ? (
+          <Published round={published} voteUrl={voteUrl} steps={steps} />
+        ) : (
+          <NotPublished roundName={roundName} steps={steps} />
+        )}
       </div>
     </div>
   );

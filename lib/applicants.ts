@@ -6,6 +6,7 @@ import { uniqueInitials } from "./initials";
 import type { Applicant } from "./types";
 
 export type AirtableAttachment = {
+  id?: string;
   url: string;
   filename?: string;
   type?: string;
@@ -14,8 +15,12 @@ export type AirtableAttachment = {
 
 export type AirtableRecord = { id: string; fields: Record<string, unknown> };
 
-/** Where each artwork's photo can be fetched from (Airtable links expire after a few hours). */
-export type ImageSource = { artworkId: string; url: string; filename: string };
+/**
+ * Where each artwork's photo can be fetched from (Airtable links expire after a
+ * few hours). `sourceId` identifies the photo itself, so an unchanged photo
+ * isn't copied again on refresh.
+ */
+export type ImageSource = { artworkId: string; url: string; filename: string; sourceId: string };
 
 export type ApplicantWithImages = { applicant: Applicant; images: ImageSource[] };
 
@@ -52,7 +57,14 @@ export function toApplicant(record: AirtableRecord, initials: string): Applicant
     const split = splitTitleAndMedium(artworkText, mediumText);
     raw.push({ id, slot, title: split.title, medium: split.medium, mediumGuessed: split.guessed, hasImage: !!attachment });
     if (attachment) {
-      images.push({ artworkId: id, url: attachment.url, filename: attachment.filename ?? `image-${slot}` });
+      images.push({
+        artworkId: id,
+        // Airtable's own full-size web version where it has one: smaller to
+        // download, and readable even when the original is an iPhone HEIC photo.
+        url: attachment.thumbnails?.full?.url ?? attachment.url,
+        filename: attachment.filename ?? `image-${slot}`,
+        sourceId: attachment.id ?? attachment.filename ?? attachment.url,
+      });
     }
   }
 

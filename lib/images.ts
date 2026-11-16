@@ -7,7 +7,9 @@ import sharp from "sharp";
 const MAX_EDGE = 2000;
 
 export async function downloadAndResize(url: string): Promise<Buffer> {
-  const res = await fetch(url, { cache: "no-store" });
+  // A photo that takes too long is given up on (and retried next refresh)
+  // rather than holding up everything else.
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(9_000) });
   if (!res.ok) throw new Error(`Photo download failed (${res.status}).`);
   const input = Buffer.from(await res.arrayBuffer());
   return sharp(input)

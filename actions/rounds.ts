@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/admin";
 import { AirtableError, fetchApplicationRecords } from "@/lib/airtable";
 import { applicantsForRound } from "@/lib/applicants";
 import { diffCorrection, type ApplicantEdits } from "@/lib/corrections";
-import { publishRound } from "@/lib/publish";
+import { publishStep } from "@/lib/publish";
 import { cleanPasscode, type RoundStatus } from "@/lib/rounds";
 import { findPublishedRound, getCorrections, getRound, saveCorrections, saveRound } from "@/lib/store";
 
@@ -58,45 +58,63 @@ export async function saveCorrectionsAction(_prev: ActionState, formData: FormDa
   }
 }
 
-export async function publishAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export type StepState = {
+  ok: boolean;
+  message: string;
+  /** Photos still to copy: the page runs another step while this is above 0. */
+  remaining: number;
+  photosReady: number;
+  photosTotal: number;
+};
+
+function stepFail(message: string): StepState {
+  return { ok: false, message, remaining: 0, photosReady: 0, photosTotal: 0 };
+}
+
+function stepProblem(e: unknown): StepState {
+  return stepFail(problem(e)!.message);
+}
+
+/** First step of publishing a round (creates it and its link); later steps use refreshStepAction. */
+export async function publishStepAction(round: string, passcode: string): Promise<StepState> {
   await requireAdmin();
-  const round = String(formData.get("round") ?? "");
   try {
-    if (await findPublishedRound(round)) return { ok: false, message: "This round is already published." };
-    const { round: published, photoProblems } = await publishRound(round, {
-      passcode: cleanPasscode(String(formData.get("passcode") ?? "")),
-    });
+    if (await findPublishedRound(round)) return stepFail("This round is already published.");
+    const step = await publishStep(round, { passcode: cleanPasscode(passcode) });
     revalidatePath(previewPath(round));
     revalidatePath("/admin");
-    return {
-      ok: photoProblems === 0,
-      message:
-        `Published ${published.applicantCount} applicants.` +
-        (photoProblems ? ` ${photoProblems} photo(s) couldn't be copied; try Refresh from Airtable.` : ""),
-    };
+    return stepResult(step);
   } catch (e) {
-    return problem(e);
+    return stepProblem(e);
   }
 }
 
-export async function refreshAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+/** One step of refreshing a published round from Airtable. Votes are kept. */
+export async function refreshStepAction(round: string): Promise<StepState> {
   await requireAdmin();
-  const round = String(formData.get("round") ?? "");
   try {
     const existing = await findPublishedRound(round);
-    if (!existing) return { ok: false, message: "This round hasn't been published yet." };
-    const { round: refreshed, photoProblems } = await publishRound(round, { existingId: existing.id });
+    if (!existing) return stepFail("This round hasn't been published yet.");
+    const step = await publishStep(round, { existingId: existing.id });
     revalidatePath(previewPath(round));
     revalidatePath("/admin");
-    return {
-      ok: photoProblems === 0,
-      message:
-        `Refreshed: ${refreshed.applicantCount} applicants. Votes already made are kept.` +
-        (photoProblems ? ` ${photoProblems} photo(s) couldn't be copied.` : ""),
-    };
+    return stepResult(step);
   } catch (e) {
-    return problem(e);
+    return stepProblem(e);
   }
+}
+
+function stepResult(step: Awaited<ReturnType<typeof publishStep>>): StepState {
+  const { remaining, photosReady, photosTotal, photoProblems } = step;
+  const base = { remaining, photosReady, photosTotal };
+  if (remaining > 0) return { ok: true, message: `Copying photos… ${photosReady} of ${photosTotal}`, ...base };
+  return {
+    ok: photoProblems === 0,
+    message:
+      `All done: ${step.round.applicantCount} applicants, ${photosReady} of ${photosTotal} photos ready. Votes already made are kept.` +
+      (photoProblems ? ` ${photoProblems} photo(s) couldn't be copied; click Refresh from Airtable to try again.` : ""),
+    ...base,
+  };
 }
 
 export async function setStatusAction(formData: FormData): Promise<void> {

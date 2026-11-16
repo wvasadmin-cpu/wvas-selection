@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applicantsForRound, countRounds, isIncomplete, roundOf, type AirtableRecord } from "./applicants";
 
-const photo = (name: string) => [{ url: `https://example.com/${name}`, filename: name }];
+const photo = (name: string) => [{ id: `att-${name}`, url: `https://example.com/${name}`, filename: name }];
 
 // Made-up applicants shaped like real Airtable records.
 const records: AirtableRecord[] = [
@@ -52,8 +52,8 @@ describe("applicantsForRound", () => {
 
   it("keeps image sources separately, by artwork", () => {
     expect(round[0].images).toEqual([
-      { artworkId: "recA-1", url: "https://example.com/a1.jpg", filename: "a1.jpg" },
-      { artworkId: "recA-2", url: "https://example.com/a2.jpg", filename: "a2.jpg" },
+      { artworkId: "recA-1", url: "https://example.com/a1.jpg", filename: "a1.jpg", sourceId: "att-a1.jpg" },
+      { artworkId: "recA-2", url: "https://example.com/a2.jpg", filename: "a2.jpg", sourceId: "att-a2.jpg" },
     ]);
   });
 
@@ -64,6 +64,27 @@ describe("applicantsForRound", () => {
 
   it("flags applicants with no artworks", () => {
     expect(round.map((a) => isIncomplete(a.applicant))).toEqual([false, true, false]);
+  });
+});
+
+describe("image sources", () => {
+  it("prefers Airtable's full-size web version when there is one", () => {
+    const records: AirtableRecord[] = [
+      {
+        id: "recZ",
+        fields: {
+          "Date of Submission": "R",
+          "Artwork 1": "X",
+          "Image 1": [{ id: "att1", url: "https://e/orig.heic", filename: "p.heic", thumbnails: { full: { url: "https://e/full.jpg" } } }],
+        },
+      },
+    ];
+    expect(applicantsForRound(records, "R")[0].images[0]).toEqual({
+      artworkId: "recZ-1",
+      url: "https://e/full.jpg",
+      filename: "p.heic",
+      sourceId: "att1",
+    });
   });
 });
 

@@ -17,7 +17,11 @@ export type RoundSummary = {
   applicantCount: number;
 };
 
-export type Round = RoundSummary & { applicants: Applicant[] };
+export type Round = RoundSummary & {
+  applicants: Applicant[];
+  /** Photos copied into storage: artwork id -> the Airtable photo it came from. */
+  photos?: Record<string, string>;
+};
 
 /** Storage-safe key for a round name: "March 27" -> "march-27". */
 export function roundKey(name: string): string {
@@ -35,6 +39,13 @@ export function passcodeMatches(expected: string, given: string): boolean {
 }
 
 export function summaryOf(round: Round): RoundSummary {
-  const { applicants, ...summary } = round;
-  return { ...summary, applicantCount: applicants.length };
+  return {
+    id: round.id,
+    name: round.name,
+    status: round.status,
+    passcode: round.passcode,
+    publishedAt: round.publishedAt,
+    refreshedAt: round.refreshedAt,
+    applicantCount: round.applicants.length,
+  };
 }

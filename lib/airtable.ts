@@ -27,8 +27,9 @@ export async function fetchApplicationRecords(): Promise<AirtableRecord[]> {
     for (const field of fieldsToRead()) params.append("fields[]", field);
     if (offset) params.set("offset", offset);
 
+    // AIRTABLE_API_URL is only for local testing against a stand-in server.
     const res = await fetch(
-      `https://api.airtable.com/v0/${encodeURIComponent(base)}/${encodeURIComponent(table)}?${params}`,
+      `${process.env.AIRTABLE_API_URL ?? "https://api.airtable.com"}/v0/${encodeURIComponent(base)}/${encodeURIComponent(table)}?${params}`,
       { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
     );
 
