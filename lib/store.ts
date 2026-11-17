@@ -109,3 +109,8 @@ export async function getUpload(id: string): Promise<ArrayBuffer | null> {
 }
 
 export const uploadExists = (id: string) => exists(`upload/${id}`);
+
+// The last problem sending an application to Airtable, shown to the admin only.
+export type ApplyProblem = { at: string; detail: string };
+export const getApplyProblem = () => readJSON<ApplyProblem | null>("apply-last-problem", null);
+export const saveApplyProblem = (problem: ApplyProblem) => writeJSON("apply-last-problem", problem);

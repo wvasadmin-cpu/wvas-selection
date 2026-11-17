@@ -3,7 +3,7 @@
 import { AirtableError, createApplicationRecord } from "@/lib/airtable";
 import { toAirtableFields, validateApplication, type ApplicationInput } from "@/lib/application";
 import { intakeStatus, ukToday } from "@/lib/intake";
-import { getIntake, uploadExists } from "@/lib/store";
+import { getIntake, saveApplyProblem, uploadExists } from "@/lib/store";
 
 export type ApplyResult = { ok: true } | { ok: false; errors: Record<string, string>; message: string };
 
@@ -41,6 +41,11 @@ export async function submitApplicationAction(input: ApplicationInput): Promise<
     return { ok: true };
   } catch (e) {
     console.error(e instanceof AirtableError ? e.message : e);
+    // Record the reason for the admin's Applications page (not shown to applicants).
+    await saveApplyProblem({
+      at: new Date().toISOString(),
+      detail: e instanceof AirtableError ? e.message : e instanceof Error ? e.message : "Unknown error",
+    }).catch(() => undefined);
     return {
       ok: false,
       errors: {},
