@@ -17,7 +17,9 @@ Design spec: the "WVAS Exhibitor Selection – Design Spec" Claude doc.
    only in `lib/*` server modules and server actions. Files importing
    `server-only` must never be imported by a client component.
 3. **Airtable field names live only in `lib/airtable-fields.ts`.** Only the
-   fields listed there are ever requested — never address, phone or email.
+   fields in `fieldsToRead()` are ever requested — never address, phone or
+   email. The application form (`/apply`) writes those, using a separate
+   write token (`AIRTABLE_WRITE_TOKEN`); the read token stays read-only.
 4. **Applicants are anonymous to voters.** Voting pages show initials only;
    full names and photo file names appear only on the admin pages.
 5. **Keep it simple and conventional.** Small, focused files; pure logic in
@@ -26,7 +28,8 @@ Design spec: the "WVAS Exhibitor Selection – Design Spec" Claude doc.
 
 ## Project map
 
-- `app/` — routes (admin pages, voting pages, dashboard to come).
+- `app/(judging)/` — admin, voting and results pages (judging header).
+- `app/apply/` — public exhibitor application form (its own header).
 - `components/` — UI.
 - `lib/` — logic. `artwork.ts` (title/medium split), `initials.ts`,
   `committee.ts`, `tally.ts` are pure and unit-tested.

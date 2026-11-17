@@ -1,7 +1,7 @@
 // The Airtable field names this site reads, in one place. If a field is
 // renamed in Airtable, change it here and nothing else needs to move.
-// Only these fields are ever requested: addresses, phone numbers and emails
-// are never read.
+// Only the fields in fieldsToRead() are ever requested: addresses, phone
+// numbers and emails are written by the application form but never read.
 
 export const ARTWORK_SLOTS = 6;
 
@@ -12,6 +12,12 @@ export const FIELDS = {
   qualifications: "Qualifications",
   otherMembership: "Other Membership",
   round: "Date of Submission",
+  // Written by the application form only; never read back by this site.
+  address: "Address and Postcode",
+  phone: "Phone Number",
+  email: "Email",
+  declaration: "Declaration",
+  date: "Date",
   artwork: (slot: number) => `Artwork ${slot}`,
   medium: (slot: number) => `Medium ${slot}`,
   image: (slot: number) => `Image ${slot}`,

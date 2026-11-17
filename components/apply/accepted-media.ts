@@ -1,0 +1,26 @@
+// Accepted media, methods and materials, as listed on the application form.
+// Also used as suggestions in the Medium boxes.
+export const ACCEPTED_MEDIA = [
+  "Pencil/graphite",
+  "Metalpoint/silverpoint",
+  "Pen",
+  "Ink",
+  "Biro",
+  "Felt tip pen",
+  "Charcoal",
+  "Chalk",
+  "Pastel/oil pastel",
+  "Sanguine",
+  "Wax crayon",
+  "Watercolour/watercolour pencil",
+  "Gouache",
+  "Powder paint/tempera",
+  "Acrylic",
+  "Oil",
+  "Cold wax/encaustic",
+  "Etching",
+  "Linoprint",
+  "Aquatint/mezzotint",
+  "Screen print",
+  "Mixed media",
+];

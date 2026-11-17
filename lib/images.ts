@@ -25,3 +25,12 @@ export async function inBatches<T>(items: T[], size: number, task: (item: T) => 
     await Promise.all(items.slice(i, i + size).map(task));
   }
 }
+
+/** Check an uploaded file really is a photo and store it as a tidy JPEG (camera details such as location removed). */
+export async function normaliseUpload(input: Buffer): Promise<Buffer> {
+  return sharp(input, { limitInputPixels: 100_000_000 })
+    .rotate()
+    .resize({ width: 2400, height: 2400, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 85, mozjpeg: true })
+    .toBuffer();
+}

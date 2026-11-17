@@ -10,6 +10,9 @@ export default function AdminNav({ email }: { email: string }) {
       <Link href="/admin/committee" className="link link-hover font-semibold">
         Committee list
       </Link>
+      <Link href="/admin/intake" className="link link-hover font-semibold">
+        Applications
+      </Link>
       <span className="ml-auto text-base-content/60 truncate max-w-full">{email}</span>
       <form
         action={async () => {

@@ -3,6 +3,7 @@ import { getStore } from "@netlify/blobs";
 import type { CommitteeMember } from "./committee";
 import type { RoundCorrections } from "./corrections";
 import { roundKey, summaryOf, type Round, type RoundSummary } from "./rounds";
+import type { Intake } from "./intake";
 import type { Ballot } from "./types";
 
 // Site storage (Netlify Blobs): committee list, corrections, published rounds
@@ -91,3 +92,20 @@ export async function listBallots(roundId: string): Promise<Ballot[]> {
 export async function deleteBallot(roundId: string, voterId: string): Promise<void> {
   await withTimeout(store().delete(`ballot/${roundId}/${voterId}`), "delete ballot");
 }
+
+// Exhibitor application intake settings
+export const getIntake = () => readJSON<Intake | null>("intake", null);
+export const saveIntake = (intake: Intake) => writeJSON("intake", intake);
+
+// Photos uploaded with applications (handed to Airtable by link)
+export async function saveUpload(id: string, jpeg: Buffer): Promise<void> {
+  await withTimeout(store().set(`upload/${id}`, new Uint8Array(jpeg).buffer), "save upload");
+}
+
+export async function getUpload(id: string): Promise<ArrayBuffer | null> {
+  const key = `upload/${id}`;
+  if (!(await exists(key))) return null;
+  return withTimeout(store().get(key, { type: "arrayBuffer" }), `read ${key}`);
+}
+
+export const uploadExists = (id: string) => exists(`upload/${id}`);
