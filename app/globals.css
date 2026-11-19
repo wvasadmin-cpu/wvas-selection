@@ -32,6 +32,100 @@
   --color-error-content: #ffffff;
 }
 
+/* Alternative colour schemes for the public application forms. */
+@plugin "daisyui/theme" {
+  name: "form-charcoal";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #f3f4f5;
+  --color-base-300: #e1e4e7;
+  --color-base-content: #24292e;
+  --color-primary: #33393f;
+  --color-primary-content: #ffffff;
+  --color-secondary: #9aa2aa;
+  --color-secondary-content: #1d2125;
+  --color-accent: #5c656e;
+  --color-accent-content: #ffffff;
+  --color-neutral: #24292e;
+  --color-neutral-content: #ffffff;
+  --color-info: #3a6ea5;
+  --color-info-content: #ffffff;
+  --color-success: #2f6b4f;
+  --color-success-content: #ffffff;
+  --color-warning: #b58a3a;
+  --color-warning-content: #1d1a12;
+  --color-error: #9b2c2c;
+  --color-error-content: #ffffff;
+}
+
+@plugin "daisyui/theme" {
+  name: "form-slate";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #f7f9fb;
+  --color-base-200: #edf1f5;
+  --color-base-300: #d9e1e9;
+  --color-base-content: #26323e;
+  --color-primary: #3d5268;
+  --color-primary-content: #ffffff;
+  --color-secondary: #9db2c7;
+  --color-secondary-content: #1b2733;
+  --color-accent: #5b7590;
+  --color-accent-content: #ffffff;
+  --color-neutral: #26323e;
+  --color-neutral-content: #ffffff;
+  --color-info: #3a6ea5;
+  --color-info-content: #ffffff;
+  --color-success: #2f6b55;
+  --color-success-content: #ffffff;
+  --color-warning: #b58a3a;
+  --color-warning-content: #1d1a12;
+  --color-error: #9b2c2c;
+  --color-error-content: #ffffff;
+}
+
+@plugin "daisyui/theme" {
+  name: "form-website";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #f1f4f6;
+  --color-base-300: #e2e8ec;
+  --color-base-content: #2c3a46;
+  --color-primary: #1f8585;
+  --color-primary-content: #ffffff;
+  --color-secondary: #8cc7c7;
+  --color-secondary-content: #12312f;
+  --color-accent: #1f8585;
+  --color-accent-content: #ffffff;
+  --color-neutral: #2c3a46;
+  --color-neutral-content: #ffffff;
+  --color-info: #3a6ea5;
+  --color-info-content: #ffffff;
+  --color-success: #1f7a6a;
+  --color-success-content: #ffffff;
+  --color-warning: #b58a3a;
+  --color-warning-content: #1d1a12;
+  --color-error: #9b2c2c;
+  --color-error-content: #ffffff;
+}
+
+/* Website-style forms: a white header with a pale grey band, like the WVAS site. */
+[data-theme="form-website"] .site-header {
+  background: #ffffff;
+  border-bottom: 12px solid #e6ebef;
+}
+[data-theme="form-website"] .site-header-kicker {
+  color: #1f8585;
+}
+[data-theme="form-website"] .site-header-title {
+  color: #24323d;
+}
+
 /* Serif display headings, matching the rota site. */
 .font-display {
   font-family: var(--font-playfair), Georgia, serif;
