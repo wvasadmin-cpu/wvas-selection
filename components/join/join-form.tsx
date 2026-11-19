@@ -84,7 +84,7 @@ export default function JoinForm({ intro }: { intro: ReactNode }) {
           </>
         ) : (
           <p>
-            Once your payment has been received, the Membership Secretary will send you a welcome email with your
+            Once your payment has been confirmed, the Membership Secretary will send you a welcome email with your
             Associate membership details.
           </p>
         )}
