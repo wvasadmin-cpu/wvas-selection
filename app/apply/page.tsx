@@ -25,8 +25,8 @@ export default async function ApplyPage() {
   const intake = await getIntake();
   const status = intakeStatus(intake);
 
-  return (
-    <div className="space-y-8">
+  const intro = (
+    <>
       <header className="space-y-4">
         <h2 className="font-display text-3xl">Welland Valley Art Society Exhibitor Membership Application</h2>
         {intake && status !== "not-set" && (
@@ -47,12 +47,12 @@ export default async function ApplyPage() {
       <Section title="What to submit">
         <p>
           Please submit photographs, titles and media of <strong>six</strong> original examples of 2D work, or{" "}
-          <strong>four</strong> original examples of 3D work, preferably made within the last three years. If your work is
-          a mixture of 2D and 3D, please submit six in total.
+          <strong>four</strong> original examples of 3D work, preferably made within the last three years. If your work
+          is a mixture of 2D and 3D, please submit six in total.
         </p>
         <p>
-          Three of the 2D works must be framed or presented to exhibition standard. The remaining three should be properly
-          mounted if not framed.
+          Three of the 2D works must be framed or presented to exhibition standard. The remaining three should be
+          properly mounted if not framed.
         </p>
       </Section>
 
@@ -78,8 +78,9 @@ export default async function ApplyPage() {
           <div className="mt-2 space-y-2 text-sm">
             <p>{ACCEPTED_MEDIA.join(", ")}.</p>
             <p>
-              Any of these media may be combined, and further combined with other materials such as fabrics, frottage and
-              collage. 3D work may be made by any of the four basic processes: carving, modelling, casting or constructing.
+              Any of these media may be combined, and further combined with other materials such as fabrics, frottage
+              and collage. 3D work may be made by any of the four basic processes: carving, modelling, casting or
+              constructing.
             </p>
             <p>
               <em>Reproductions of original works, digital artwork and AI-assisted processes are not accepted.</em>
@@ -90,8 +91,8 @@ export default async function ApplyPage() {
 
       <Section title="If your application is successful">
         <p>
-          You will be eligible to enter work in the Society&apos;s two annual exhibitions at Stamford Arts Centre, in spring
-          and autumn. Members are expected to:
+          You will be eligible to enter work in the Society&apos;s two annual exhibitions at Stamford Arts Centre, in
+          spring and autumn. Members are expected to:
         </p>
         <ul className="list-disc pl-6 space-y-1">
           <li>steward a minimum of three sessions at WVAS exhibitions in which their work is displayed</li>
@@ -104,30 +105,32 @@ export default async function ApplyPage() {
 
       <Section title="If your application is unsuccessful">
         <p>
-          The committee will endeavour to give constructive feedback. An unsuccessful application does not prevent you from
-          applying again, and we encourage you to re-apply, taking account of any advice given.
+          The committee will endeavour to give constructive feedback. An unsuccessful application does not prevent you
+          from applying again, and we encourage you to re-apply, taking account of any advice given.
         </p>
       </Section>
 
       <p className="text-sm italic text-base-content/70">
         The Welland Valley Art Society collects personal data from its members solely for the purposes of managing
-        membership, communications and society activities. We do not sell, share or pass on your personal data to any third
-        party for marketing or commercial purposes. Your data is held securely and used only in accordance with our
-        obligations under UK GDPR. You may ask to view, update or remove your data at any time by contacting the Membership
-        Secretary: WVASMembersec@gmail.com
+        membership, communications and society activities. We do not sell, share or pass on your personal data to any
+        third party for marketing or commercial purposes. Your data is held securely and used only in accordance with
+        our obligations under UK GDPR. You may ask to view, update or remove your data at any time by contacting the
+        Membership Secretary: WVASMembersec@gmail.com
       </p>
+    </>
+  );
 
+  if (status === "open") return <ApplicationForm intro={intro} />;
+
+  return (
+    <div className="space-y-8">
+      {intro}
       <hr className="border-base-300" />
-
-      {status === "open" ? (
-        <ApplicationForm />
-      ) : (
-        <div role="status" className="alert">
-          {status === "closed"
-            ? "Applications for this round are now closed. Thank you for your interest; please check back for the next round."
-            : "Applications are not open at the moment. Please check back soon."}
-        </div>
-      )}
+      <div role="status" className="alert">
+        {status === "closed"
+          ? "Applications for this round are now closed. Thank you for your interest; please check back for the next round."
+          : "Applications are not open at the moment. Please check back soon."}
+      </div>
     </div>
   );
 }
