@@ -1,16 +1,10 @@
 import ApplicationForm from "@/components/apply/application-form";
 import { ACCEPTED_MEDIA } from "@/components/apply/accepted-media";
+import { CRITERIA } from "@/lib/criteria";
 import { intakeStatus, longDate } from "@/lib/intake";
 import { getIntake } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
-
-const CRITERIA = [
-  { name: "Cohesion", detail: "A consistent, quality body of work" },
-  { name: "Technical skill", detail: "Effective use of medium, materials and processes" },
-  { name: "Originality", detail: "Evidence of individuality, creativity and engagement" },
-  { name: "Presentation", detail: "Professional, exhibition-ready standard" },
-];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -35,7 +29,7 @@ export default async function ApplyPage() {
             <dd>{longDate(intake.closesOn)}</dd>
             {intake.viewing && (
               <>
-                <dt className="font-semibold">Viewing and voting</dt>
+                <dt className="font-semibold">Viewing and Voting Day</dt>
                 <dd>{intake.viewing}</dd>
               </>
             )}
@@ -47,8 +41,12 @@ export default async function ApplyPage() {
       <Section title="What to submit">
         <p>
           Please submit photographs, titles and media of <strong>six</strong> original examples of 2D work, or{" "}
-          <strong>four</strong> original examples of 3D work, preferably made within the last three years. If your work
-          is a mixture of 2D and 3D, please submit six in total.
+          <strong>four</strong> original examples of 3D work, preferably made within the last three years.
+        </p>
+        <p>If your work is a mixture of 2D and 3D, please submit six in total.</p>
+        <p>
+          These should be the same works that you intend to bring to the Viewing and Voting Day. If this changes, please{" "}
+          <strong>submit a new form</strong> before the closing date.
         </p>
         <p>
           Three of the 2D works must be framed or presented to exhibition standard. The remaining three should be
@@ -58,9 +56,9 @@ export default async function ApplyPage() {
 
       <Section title="On the viewing day">
         <p>
-          Please bring an artist statement, sketchbooks, ideas, preparatory work or anything else that will help the
-          committee understand your submission. This supporting material will not be judged, but may help the committee
-          understand your creative process.
+          Please bring the works listed on your application. You may also bring an artist statement, sketchbooks,
+          preparatory work or anything else that is relevant. This supporting material will not be judged, but may help
+          the committee understand your creative process.
         </p>
       </Section>
 
@@ -73,8 +71,8 @@ export default async function ApplyPage() {
             </li>
           ))}
         </ul>
-        <details className="rounded-box border border-base-300 bg-base-100 p-3">
-          <summary className="cursor-pointer font-semibold">Accepted media, methods and materials</summary>
+        <div className="rounded-box border border-base-300 bg-base-100 p-3">
+          <p className="font-semibold">Accepted media, methods and materials</p>
           <div className="mt-2 space-y-2 text-sm">
             <p>{ACCEPTED_MEDIA.join(", ")}.</p>
             <p>
@@ -86,7 +84,7 @@ export default async function ApplyPage() {
               <em>Reproductions of original works, digital artwork and AI-assisted processes are not accepted.</em>
             </p>
           </div>
-        </details>
+        </div>
       </Section>
 
       <Section title="If your application is successful">
