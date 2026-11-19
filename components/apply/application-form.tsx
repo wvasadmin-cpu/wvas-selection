@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { submitApplicationAction } from "@/actions/apply";
 import { artworkCount, type WorkType } from "@/lib/application";
+import { tidyCase } from "@/lib/name-match";
 import { ACCEPTED_MEDIA } from "./accepted-media";
 import PhotoPicker, { type PhotoState } from "./photo-picker";
 
@@ -85,7 +86,7 @@ export default function ApplicationForm() {
         website,
       });
       if (result.ok) {
-        setSentTo(about.firstName.trim());
+        setSentTo(tidyCase(about.firstName.trim()));
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }

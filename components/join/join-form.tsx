@@ -3,15 +3,17 @@
 import { useState } from "react";
 import { submitMembershipAction } from "@/actions/join";
 import { paymentReference } from "@/lib/membership";
+import { tidyCase } from "@/lib/name-match";
+import BankDetails from "./bank-details";
 
 export default function JoinForm() {
   const [form, setForm] = useState({ firstName: "", surname: "", address: "", phone: "", email: "" });
-  const [paid, setPaid] = useState(false);
+  const [payment, setPayment] = useState<"" | "paid" | "later">("");
   const [website, setWebsite] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [sentTo, setSentTo] = useState("");
+  const [sent, setSent] = useState<{ name: string; payment: string; reference: string } | null>(null);
 
   const reference = paymentReference(form.firstName, form.surname);
 
@@ -45,9 +47,9 @@ export default function JoinForm() {
     setSending(true);
     setMessage("");
     try {
-      const result = await submitMembershipAction({ ...form, paid, website });
+      const result = await submitMembershipAction({ ...form, payment, website });
       if (result.ok) {
-        setSentTo(form.firstName.trim());
+        setSent({ name: tidyCase(form.firstName.trim()), payment, reference });
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -62,14 +64,28 @@ export default function JoinForm() {
     }
   };
 
-  if (sentTo) {
+  if (sent) {
     return (
-      <div role="status" className="rounded-box border-2 border-success bg-success/10 p-6 space-y-2">
-        <p className="font-display text-2xl">Thank you{sentTo ? `, ${sentTo}` : ""}.</p>
-        <p>
-          Your application has been received. Once your payment has arrived, the Membership Secretary will send you a welcome
-          email with your Associate membership details.
-        </p>
+      <div role="status" className="rounded-box border-2 border-success bg-success/10 p-6 space-y-3">
+        <p className="font-display text-2xl">Thank you{sent.name ? `, ${sent.name}` : ""}.</p>
+        <p>Your application has been received.</p>
+        {sent.payment === "later" ? (
+          <>
+            <p>
+              <strong>Please now pay the £10 annual fee</strong> by bank transfer so that your membership can be confirmed:
+            </p>
+            <BankDetails reference={sent.reference} />
+            <p>
+              Once your payment has arrived, the Membership Secretary will send you a welcome email with your Associate
+              membership details.
+            </p>
+          </>
+        ) : (
+          <p>
+            Once your payment has been received, the Membership Secretary will send you a welcome email with your Associate
+            membership details.
+          </p>
+        )}
       </div>
     );
   }
@@ -128,12 +144,22 @@ export default function JoinForm() {
             <span className="text-base-content/60">enter your name above to see it</span>
           )}
         </p>
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input {...field("paid")} type="checkbox" className="checkbox mt-0.5" checked={paid}
-            onChange={(e) => { setPaid(e.target.checked); clear("paid"); }} />
-          <span>I have paid the £10 annual fee by bank transfer{reference ? `, using the reference ${reference}` : ""}.</span>
-        </label>
-        {error("paid")}
+        <fieldset aria-describedby={errors.payment ? "payment-error" : undefined}>
+          <legend id="payment" tabIndex={-1} className="font-semibold mb-2">Have you paid the £10 annual fee?</legend>
+          <div className="space-y-2">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="radio" name="payment" className="radio mt-0.5" checked={payment === "paid"}
+                onChange={() => { setPayment("paid"); clear("payment"); }} />
+              <span>Yes, I&apos;ve paid by bank transfer{reference ? ` using the reference ${reference}` : ""}</span>
+            </label>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="radio" name="payment" className="radio mt-0.5" checked={payment === "later"}
+                onChange={() => { setPayment("later"); clear("payment"); }} />
+              <span>Not yet, I&apos;ll pay shortly</span>
+            </label>
+          </div>
+        </fieldset>
+        {error("payment")}
       </div>
 
       <div className="space-y-3">

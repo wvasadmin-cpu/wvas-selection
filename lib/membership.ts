@@ -10,12 +10,13 @@ export type MembershipInput = {
   address: string;
   phone: string;
   email: string;
-  paid: boolean;
+  /** "paid" or "later" (paying shortly). */
+  payment: string;
   /** Hidden field that people never see; bots tend to fill it in. */
   website: string;
 };
 
-export type CleanMembership = Omit<MembershipInput, "website" | "paid">;
+export type CleanMembership = Omit<MembershipInput, "website" | "payment"> & { payment: "paid" | "later" };
 
 export type MembershipValidation =
   | { ok: true; application: CleanMembership }
@@ -54,11 +55,12 @@ export function validateMembership(input: MembershipInput): MembershipValidation
     errors.phone = "Please enter a phone number we can reach you on.";
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "Please enter a valid email address.";
-  if (input.paid !== true) errors.paid = "Please make your payment first, then tick to confirm.";
+  const payment = input.payment === "paid" || input.payment === "later" ? input.payment : null;
+  if (!payment) errors.payment = "Please say whether you've paid the fee yet.";
   if (oneLine(input.website, 200)) errors.form = "Sorry, something went wrong. Please try again.";
 
-  if (Object.keys(errors).length) return { ok: false, errors };
-  return { ok: true, application: { firstName, surname, address, phone, email } };
+  if (Object.keys(errors).length || !payment) return { ok: false, errors };
+  return { ok: true, application: { firstName, surname, address, phone, email, payment } };
 }
 
 /** "2026-11-19" -> "19/11/2026" */
@@ -78,6 +80,8 @@ export function toMemberFields(app: CleanMembership, options: { today: string })
     [MEMBER_FIELDS.membershipType]: ASSOCIATE_TYPE,
     [MEMBER_FIELDS.newAssociate]: [NEW_ASSOCIATE_FLAG],
     [MEMBER_FIELDS.dateJoined]: options.today,
-    [MEMBER_FIELDS.notes]: `Applied online ${ukDate(options.today)}, ref ${reference}, applicant says paid`,
+    [MEMBER_FIELDS.notes]: `Applied online ${ukDate(options.today)}, ref ${reference}, ${
+      app.payment === "paid" ? "applicant says paid" : "payment to follow"
+    }`,
   };
 }

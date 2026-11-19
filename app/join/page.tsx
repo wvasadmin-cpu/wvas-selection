@@ -1,3 +1,4 @@
+import BankDetails from "@/components/join/bank-details";
 import JoinForm from "@/components/join/join-form";
 
 const BENEFITS = [
@@ -31,23 +32,14 @@ export default function JoinPage() {
             <p>
               Pay the <strong>£10 annual fee</strong> by bank transfer:
             </p>
-            <dl className="mt-2 rounded-box border-2 border-secondary bg-secondary/10 p-4 grid gap-1 grid-cols-[auto_1fr] gap-x-4">
-              <dt className="font-semibold">Account name</dt>
-              <dd>Welland Valley Art Society</dd>
-              <dt className="font-semibold">Bank</dt>
-              <dd>Lloyds Bank</dd>
-              <dt className="font-semibold">Account number</dt>
-              <dd className="tabular-nums">00249374</dd>
-              <dt className="font-semibold">Sort code</dt>
-              <dd className="tabular-nums">30-98-02</dd>
-              <dt className="font-semibold">Reference</dt>
-              <dd>your surname and first initial (shown below once you&apos;ve entered your name)</dd>
-            </dl>
+            <div className="mt-2">
+              <BankDetails />
+            </div>
           </li>
-          <li>Complete the form below and submit it.</li>
+          <li>Complete the form below and submit it. If you haven&apos;t paid yet, you can still apply and pay shortly afterwards.</li>
         </ol>
         <p>
-          Applications can&apos;t be processed until payment has been received. The Membership Secretary will then send you a
+          Your membership will be confirmed once your payment has arrived, when the Membership Secretary will send you a
           welcome email with your Associate membership details.
         </p>
       </section>

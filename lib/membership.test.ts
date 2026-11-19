@@ -7,7 +7,7 @@ const base = (o: Partial<MembershipInput> = {}): MembershipInput => ({
   address: "1 High Street\nStamford PE9 1AA",
   phone: "07700 900123",
   email: " Jo@Example.com",
-  paid: true,
+  payment: "paid",
   website: "",
   ...o,
 });
@@ -37,12 +37,17 @@ describe("validateMembership", () => {
       address: "1 High Street\nStamford PE9 1AA",
       phone: "07700 900123",
       email: "jo@example.com",
+      payment: "paid",
     });
   });
 
-  it("needs every field and the payment confirmation", () => {
-    const r = validateMembership(base({ firstName: "", address: " ", phone: "12", email: "x", paid: false }));
-    expect(!r.ok && Object.keys(r.errors).sort()).toEqual(["address", "email", "firstName", "paid", "phone"]);
+  it("needs every field and an answer about payment", () => {
+    const r = validateMembership(base({ firstName: "", address: " ", phone: "12", email: "x", payment: "" }));
+    expect(!r.ok && Object.keys(r.errors).sort()).toEqual(["address", "email", "firstName", "payment", "phone"]);
+  });
+
+  it("accepts applicants who haven't paid yet", () => {
+    expect(validateMembership(base({ payment: "later" })).ok).toBe(true);
   });
 
   it("turns away the hidden bot field", () => {
@@ -51,8 +56,8 @@ describe("validateMembership", () => {
 });
 
 describe("toMemberFields", () => {
-  const app = (phone: string) => {
-    const r = validateMembership(base({ phone }));
+  const app = (phone: string, payment = "paid") => {
+    const r = validateMembership(base({ phone, payment }));
     if (!r.ok) throw new Error("expected ok");
     return r.application;
   };
@@ -69,6 +74,12 @@ describe("toMemberFields", () => {
       "Date Joined": "2026-11-19",
       Notes: "Applied online 19/11/2026, ref OBRIENSMITHJ, applicant says paid",
     });
+  });
+
+  it("notes when payment is to follow", () => {
+    expect(toMemberFields(app("07700 900123", "later"), { today: "2026-11-19" }).Notes).toBe(
+      "Applied online 19/11/2026, ref OBRIENSMITHJ, payment to follow",
+    );
   });
 
   it("puts landlines in Phone", () => {
