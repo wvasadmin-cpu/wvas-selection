@@ -16,6 +16,7 @@ export default async function IntakePage() {
   if (!email) return <AdminSignIn />;
   const [intake, problem] = await Promise.all([getIntake(), getApplyProblem()]);
   const hasWriteToken = Boolean(process.env.AIRTABLE_WRITE_TOKEN);
+  const hasMembersTable = Boolean(process.env.AIRTABLE_MEMBERS_TABLE);
   const status = intakeStatus(intake);
   const words = { open: "Open: accepting applications", closed: "Closed", "not-set": "Not set up yet" };
 
@@ -28,7 +29,11 @@ export default async function IntakePage() {
         <a href={`${siteUrl()}/apply`} className="link font-mono" target="_blank" rel="noreferrer">
           {siteUrl()}/apply
         </a>
-        . Link to it from the WVAS website.
+        . Link to it from the WVAS website. The associate membership form (always open) is at{" "}
+        <a href={`${siteUrl()}/join`} className="link font-mono" target="_blank" rel="noreferrer">
+          {siteUrl()}/join
+        </a>
+        .
       </p>
       <p className="mb-6">
         <span className={`badge ${status === "open" ? "badge-success" : "badge-neutral"}`}>{words[status]}</span>
@@ -45,6 +50,14 @@ export default async function IntakePage() {
             <span className="text-error font-semibold">
               not found: add it in Netlify (available to Functions), then Trigger deploy
             </span>
+          )}
+        </p>
+        <p>
+          Members table for the associate form (AIRTABLE_MEMBERS_TABLE):{" "}
+          {hasMembersTable ? (
+            <span className="text-success font-semibold">found</span>
+          ) : (
+            <span className="text-error font-semibold">not found: add it in Netlify, then Trigger deploy</span>
           )}
         </p>
         {problem ? (

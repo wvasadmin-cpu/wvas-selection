@@ -2,6 +2,7 @@
 // Pure, so it can be tested; the server action does the storage and sending.
 
 import { FIELDS } from "./airtable-fields";
+import { tidyCase } from "./name-match";
 
 export type WorkType = "2d" | "3d" | "mixed";
 
@@ -42,8 +43,8 @@ function oneLine(text: unknown, max: number): string {
 
 export function validateApplication(input: ApplicationInput): Validation {
   const errors: Record<string, string> = {};
-  const firstName = oneLine(input.firstName, 60);
-  const surname = oneLine(input.surname, 60);
+  const firstName = tidyCase(oneLine(input.firstName, 60));
+  const surname = tidyCase(oneLine(input.surname, 60));
   const address = clean(input.address, 400);
   const phone = oneLine(input.phone, 30);
   const email = oneLine(input.email, 120).toLowerCase();

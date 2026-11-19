@@ -73,7 +73,7 @@ function firstNameScore(typed: string, official: string): number {
 export type TypedName = { first: string; surname: string };
 
 /** "alex" or "EXAMPLE" -> "Alex", "Example"; mixed case ("McLeod") is left alone. */
-function tidyCase(text: string): string {
+export function tidyCase(text: string): string {
   if (/[a-z]/.test(text) && /[A-Z]/.test(text)) return text;
   return text.toLowerCase().replace(/(^|[\s\-'])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
 }

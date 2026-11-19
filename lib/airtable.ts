@@ -54,14 +54,14 @@ export async function fetchApplicationRecords(): Promise<AirtableRecord[]> {
 }
 
 /**
- * Add one exhibitor application to Airtable. Uses a separate token with write
- * permission (the reading token stays read-only). `typecast` lets Airtable
- * match text to dropdown options and dates.
+ * Add one record to an Airtable table in the applications base. Uses a
+ * separate token with write permission (the reading token stays read-only).
+ * `typecast` lets Airtable match text to dropdown options and dates.
  */
-export async function createApplicationRecord(fields: Record<string, unknown>): Promise<string> {
+async function createRecord(table: string, fields: Record<string, unknown>): Promise<string> {
   const token = process.env.AIRTABLE_WRITE_TOKEN;
-  const { base, table } = config();
-  if (!token) throw new AirtableError("Applications can't be saved yet: AIRTABLE_WRITE_TOKEN is not set.");
+  const { base } = config();
+  if (!token) throw new AirtableError("Forms can't be saved yet: AIRTABLE_WRITE_TOKEN is not set.");
 
   const res = await fetch(
     `${process.env.AIRTABLE_API_URL ?? "https://api.airtable.com"}/v0/${encodeURIComponent(base)}/${encodeURIComponent(table)}`,
@@ -84,4 +84,16 @@ export async function createApplicationRecord(fields: Record<string, unknown>): 
   }
   const body = (await res.json()) as { records: { id: string }[] };
   return body.records[0]?.id ?? "";
+}
+
+/** Add one exhibitor application to the applications table. */
+export function createApplicationRecord(fields: Record<string, unknown>): Promise<string> {
+  return createRecord(config().table, fields);
+}
+
+/** Add one new associate member to the master membership table. */
+export function createMemberRecord(fields: Record<string, unknown>): Promise<string> {
+  const table = process.env.AIRTABLE_MEMBERS_TABLE;
+  if (!table) throw new AirtableError("The membership form can't be saved yet: AIRTABLE_MEMBERS_TABLE is not set.");
+  return createRecord(table, fields);
 }
