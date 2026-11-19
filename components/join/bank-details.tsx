@@ -15,7 +15,9 @@ export default function BankDetails({ reference }: { reference?: string }) {
         {reference ? (
           <strong className="font-mono tracking-wide">{reference}</strong>
         ) : (
-          "your surname and first initial (shown below once you've entered your name)"
+          <span className="text-base-content/60">
+            your surname and first initial: appears here once you&apos;ve entered your name
+          </span>
         )}
       </dd>
     </dl>

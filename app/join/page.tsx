@@ -1,4 +1,3 @@
-import BankDetails from "@/components/join/bank-details";
 import JoinForm from "@/components/join/join-form";
 
 const BENEFITS = [
@@ -29,19 +28,14 @@ export default function JoinPage() {
 
           <section className="space-y-3">
             <h3 className="font-display text-xl">How to join</h3>
-            <ol className="list-decimal pl-6 space-y-3">
+            <ol className="list-decimal pl-6 space-y-2">
+              <li>Enter your details in the form below.</li>
               <li>
-                <p>
-                  Pay the <strong>£10 annual fee</strong> by bank transfer:
-                </p>
-                <div className="mt-2">
-                  <BankDetails />
-                </div>
+                Pay the <strong>£10 annual fee</strong> by bank transfer, using the bank details and your personal
+                payment reference shown with the form. If you can&apos;t pay straight away, you can still apply and pay
+                shortly afterwards.
               </li>
-              <li>
-                Complete the form below and submit it. If you haven&apos;t paid yet, you can still apply and pay shortly
-                afterwards.
-              </li>
+              <li>Submit the form.</li>
             </ol>
             <p>
               Your membership will be confirmed once your payment has arrived, when the Membership Secretary will send

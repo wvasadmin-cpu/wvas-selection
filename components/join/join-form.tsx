@@ -185,15 +185,14 @@ export default function JoinForm({ intro }: { intro: ReactNode }) {
           </div>
         </div>
 
-        <div className="rounded-box border border-base-300 bg-base-100 p-4 space-y-3">
+        <h3 className="font-display text-2xl pt-4">Payment</h3>
+        <div className="space-y-3">
           <p>
-            Your payment reference:{" "}
-            {reference ? (
-              <strong className="font-mono text-lg tracking-wide">{reference}</strong>
-            ) : (
-              <span className="text-base-content/60">enter your name above to see it</span>
-            )}
+            Please pay the <strong>£10 annual fee</strong> by bank transfer, using your personal payment reference:
           </p>
+          <BankDetails reference={reference || undefined} />
+        </div>
+        <div className="rounded-box border border-base-300 bg-base-100 p-4 space-y-3">
           <fieldset aria-describedby={errors.payment ? "payment-error" : undefined}>
             <legend id="payment" tabIndex={-1} className="font-semibold mb-2">
               Have you paid the £10 annual fee?
