@@ -84,7 +84,7 @@ function Thumbs({ roundId, applicant }: { roundId: string; applicant: Applicant 
           // eslint-disable-next-line @next/next/no-img-element
           <img
             key={art.id}
-            src={`/api/images/${roundId}/${art.id}`}
+            src={`/api/images/${roundId}/${art.id}?size=thumb`}
             alt=""
             loading="lazy"
             className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded bg-base-200"

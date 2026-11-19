@@ -20,7 +20,9 @@ export type AirtableRecord = { id: string; fields: Record<string, unknown> };
  * few hours). `sourceId` identifies the photo itself, so an unchanged photo
  * isn't copied again on refresh.
  */
-export type ImageSource = { artworkId: string; url: string; filename: string; sourceId: string };
+export type ImageSource = { artworkId: string; url: string; thumbUrl: string; filename: string; sourceId: string };
+
+const WEB_PHOTO = /^image\/(jpeg|png|webp)$/;
 
 export type ApplicantWithImages = { applicant: Applicant; images: ImageSource[] };
 
@@ -59,9 +61,11 @@ export function toApplicant(record: AirtableRecord, initials: string): Applicant
     if (attachment) {
       images.push({
         artworkId: id,
-        // Airtable's own full-size web version where it has one: smaller to
-        // download, and readable even when the original is an iPhone HEIC photo.
-        url: attachment.thumbnails?.full?.url ?? attachment.url,
+        // The original when it's an ordinary web photo (most detail to zoom into);
+        // otherwise Airtable's full-size web version, which works even for iPhone
+        // HEIC photos. The small thumbnail is for the admin preview grid.
+        url: WEB_PHOTO.test(attachment.type ?? "") ? attachment.url : (attachment.thumbnails?.full?.url ?? attachment.url),
+        thumbUrl: attachment.thumbnails?.large?.url ?? attachment.url,
         filename: attachment.filename ?? `image-${slot}`,
         sourceId: attachment.id ?? attachment.filename ?? attachment.url,
       });

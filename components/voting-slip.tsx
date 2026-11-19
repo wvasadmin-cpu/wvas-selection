@@ -29,7 +29,7 @@ export default function VotingSlip({
               <div className="slip-thumb">
                 {art.hasImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={`/api/images/${roundId}/${art.id}`} alt="" />
+                  <img src={`/api/images/${roundId}/${art.id}?size=thumb`} alt="" />
                 ) : (
                   <span>No photo</span>
                 )}

@@ -4,20 +4,37 @@ import { useRef, useState } from "react";
 
 export type PhotoState = { id: string; preview: string } | null;
 
-const MAX_EDGE = 2400;
+// Keep plenty of detail for judges to zoom into, while staying under Netlify's
+// upload limit (about 6 MB per request).
+const MAX_EDGE = 3600;
+const MAX_BYTES = 4_500_000;
 
-/** Shrink a photo in the browser before upload, so big phone photos send quickly. */
+async function encode(bitmap: ImageBitmap, edge: number, quality: number): Promise<Blob | null> {
+  const scale = Math.min(1, edge / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+}
+
+/** Shrink a photo in the browser only as much as needed, so big phone photos upload reliably. */
 async function shrink(file: File): Promise<Blob> {
   try {
     const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
-    if (blob) return blob;
+    try {
+      for (const [edge, quality] of [
+        [MAX_EDGE, 0.9],
+        [MAX_EDGE, 0.8],
+        [3000, 0.8],
+        [2400, 0.8],
+      ] as const) {
+        const blob = await encode(bitmap, edge, quality);
+        if (blob && blob.size <= MAX_BYTES) return blob;
+      }
+    } finally {
+      bitmap.close();
+    }
   } catch {
     // Browser can't read it (e.g. some HEIC files): send as it is and let the server try.
   }

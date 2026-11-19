@@ -70,7 +70,15 @@ export async function saveImage(roundId: string, artworkId: string, jpeg: Buffer
   await withTimeout(store().set(`image/${roundId}/${artworkId}`, bytes.buffer), "save photo");
 }
 
-export async function getImage(roundId: string, artworkId: string): Promise<ArrayBuffer | null> {
+export async function saveThumb(roundId: string, artworkId: string, jpeg: Buffer): Promise<void> {
+  await withTimeout(store().set(`thumb/${roundId}/${artworkId}`, new Uint8Array(jpeg).buffer), "save thumbnail");
+}
+
+/** A round's photo: the large copy, or its thumbnail (falling back to the large copy for older rounds). */
+export async function getImage(roundId: string, artworkId: string, size: "large" | "thumb" = "large"): Promise<ArrayBuffer | null> {
+  if (size === "thumb" && (await exists(`thumb/${roundId}/${artworkId}`))) {
+    return withTimeout(store().get(`thumb/${roundId}/${artworkId}`, { type: "arrayBuffer" }), "read thumbnail");
+  }
   const key = `image/${roundId}/${artworkId}`;
   if (!(await exists(key))) return null;
   return withTimeout(store().get(key, { type: "arrayBuffer" }), `read ${key}`);

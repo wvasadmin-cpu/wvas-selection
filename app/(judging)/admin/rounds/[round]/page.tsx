@@ -109,6 +109,7 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
                       id: art.id,
                       // Airtable's own (expiring) link: fine for the admin preview only.
                       src: images.find((i) => i.artworkId === art.id)?.url ?? null,
+                      thumb: images.find((i) => i.artworkId === art.id)?.thumbUrl ?? null,
                       title: `${art.slot}. ${art.title}`,
                       medium: art.medium,
                       caption: (

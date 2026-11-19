@@ -165,7 +165,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ roundI
                           {art.hasImage ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={`/api/images/${round.id}/${art.id}`}
+                              src={`/api/images/${round.id}/${art.id}?size=thumb`}
                               alt={art.title}
                               loading="lazy"
                               className="w-full h-full object-contain"

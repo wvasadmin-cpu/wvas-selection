@@ -52,8 +52,8 @@ describe("applicantsForRound", () => {
 
   it("keeps image sources separately, by artwork", () => {
     expect(round[0].images).toEqual([
-      { artworkId: "recA-1", url: "https://example.com/a1.jpg", filename: "a1.jpg", sourceId: "att-a1.jpg" },
-      { artworkId: "recA-2", url: "https://example.com/a2.jpg", filename: "a2.jpg", sourceId: "att-a2.jpg" },
+      { artworkId: "recA-1", url: "https://example.com/a1.jpg", thumbUrl: "https://example.com/a1.jpg", filename: "a1.jpg", sourceId: "att-a1.jpg" },
+      { artworkId: "recA-2", url: "https://example.com/a2.jpg", thumbUrl: "https://example.com/a2.jpg", filename: "a2.jpg", sourceId: "att-a2.jpg" },
     ]);
   });
 
@@ -68,23 +68,23 @@ describe("applicantsForRound", () => {
 });
 
 describe("image sources", () => {
-  it("prefers Airtable's full-size web version when there is one", () => {
-    const records: AirtableRecord[] = [
-      {
-        id: "recZ",
-        fields: {
-          "Date of Submission": "R",
-          "Artwork 1": "X",
-          "Image 1": [{ id: "att1", url: "https://e/orig.heic", filename: "p.heic", thumbnails: { full: { url: "https://e/full.jpg" } } }],
-        },
-      },
-    ];
-    expect(applicantsForRound(records, "R")[0].images[0]).toEqual({
-      artworkId: "recZ-1",
-      url: "https://e/full.jpg",
-      filename: "p.heic",
-      sourceId: "att1",
-    });
+  const withImage = (image: Record<string, unknown>): AirtableRecord[] => [
+    { id: "recZ", fields: { "Date of Submission": "R", "Artwork 1": "X", "Image 1": [image] } },
+  ];
+  const thumbnails = { full: { url: "https://e/full.jpg" }, large: { url: "https://e/large.jpg" } };
+
+  it("uses the original for ordinary web photos, for the most detail", () => {
+    expect(
+      applicantsForRound(withImage({ id: "att1", url: "https://e/orig.jpg", type: "image/jpeg", filename: "p.jpg", thumbnails }), "R")[0]
+        .images[0],
+    ).toEqual({ artworkId: "recZ-1", url: "https://e/orig.jpg", thumbUrl: "https://e/large.jpg", filename: "p.jpg", sourceId: "att1" });
+  });
+
+  it("uses Airtable's full-size web version for other formats such as HEIC", () => {
+    expect(
+      applicantsForRound(withImage({ id: "att1", url: "https://e/orig.heic", type: "image/heic", filename: "p.heic", thumbnails }), "R")[0]
+        .images[0].url,
+    ).toBe("https://e/full.jpg");
   });
 });
 

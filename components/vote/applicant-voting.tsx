@@ -104,6 +104,7 @@ export default function ApplicantVoting({
         items={applicant.artworks.map((art) => ({
           id: art.id,
           src: art.hasImage ? `/api/images/${roundId}/${art.id}` : null,
+          thumb: art.hasImage ? `/api/images/${roundId}/${art.id}?size=thumb` : null,
           title: `${art.slot}. ${art.title}`,
           medium: art.medium,
           caption: (

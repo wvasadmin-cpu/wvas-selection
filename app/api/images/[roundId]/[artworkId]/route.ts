@@ -2,8 +2,8 @@ import { hasVoterAccess } from "@/lib/access";
 import { getAdminEmail } from "@/lib/admin";
 import { getImage, getRound } from "@/lib/store";
 
-// Serves a round's resized photos, only to the admin or to voters with access.
-export async function GET(_req: Request, { params }: { params: Promise<{ roundId: string; artworkId: string }> }) {
+// Serves a round's photos (?size=thumb for the small version), only to the admin or to voters with access.
+export async function GET(req: Request, { params }: { params: Promise<{ roundId: string; artworkId: string }> }) {
   const { roundId, artworkId } = await params;
   const round = await getRound(roundId);
   if (!round) return new Response("Not found", { status: 404 });
@@ -12,7 +12,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ roundId
     return new Response("Not allowed", { status: 403 });
   }
 
-  const image = await getImage(roundId, artworkId);
+  const size = new URL(req.url).searchParams.get("size") === "thumb" ? "thumb" : "large";
+  const image = await getImage(roundId, artworkId, size);
   if (!image) return new Response("Not found", { status: 404 });
 
   return new Response(image, {

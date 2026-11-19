@@ -6,7 +6,7 @@ import { getIntake, saveUpload } from "@/lib/store";
 // Receives one artwork photo from the application form (already shrunk in the
 // browser), checks it's a real image, stores it, and returns an id. Only
 // accepted while applications are open.
-const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_BYTES = 6 * 1024 * 1024;
 
 export async function POST(req: Request) {
   if (intakeStatus(await getIntake()) !== "open") {
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const form = await req.formData().catch(() => null);
   const file = form?.get("photo");
   if (!(file instanceof File)) return Response.json({ error: "No photo received." }, { status: 400 });
-  if (file.size > MAX_BYTES) return Response.json({ error: "That photo is too large (8 MB maximum)." }, { status: 413 });
+  if (file.size > MAX_BYTES) return Response.json({ error: "That photo is too large. Please choose a smaller one (under 6 MB)." }, { status: 413 });
 
   let jpeg: Buffer;
   try {

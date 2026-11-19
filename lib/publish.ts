@@ -6,12 +6,16 @@ import { applyCorrection, isExcluded } from "./corrections";
 import { downloadAndResize } from "./images";
 import { nextCopied, photosToCopy } from "./photo-plan";
 import type { Round } from "./rounds";
-import { getCorrections, getRound, saveImage, saveRound } from "./store";
+import { getCorrections, getRound, saveImage, saveRound, saveThumb } from "./store";
 import type { Applicant } from "./types";
 
 // Netlify stops a request after about 26 seconds, so each step copies photos
 // for at most this long; the admin page then runs further steps until done.
-const PHOTO_TIME_BUDGET_MS = 10_000;
+const PHOTO_TIME_BUDGET_MS = 8_000;
+
+// Bump when the way photos are stored changes, so existing rounds re-copy them
+// on their next refresh (v2: large zoomable copy plus thumbnail).
+const PHOTO_VERSION = "v2";
 const PHOTOS_AT_ONCE = 4;
 
 export type PublishStep = {
@@ -43,7 +47,7 @@ export async function publishStep(name: string, options: { passcode?: string; ex
   );
   const id = existing?.id ?? randomBytes(18).toString("base64url");
 
-  const sources = entries.flatMap((e) => e.images);
+  const sources = entries.flatMap((e) => e.images).map((s) => ({ ...s, sourceId: `${PHOTO_VERSION}:${s.sourceId}` }));
   const todo = photosToCopy(sources, existing?.photos);
   const copiedNow: typeof sources = [];
   const failed = new Set<string>();
@@ -55,7 +59,8 @@ export async function publishStep(name: string, options: { passcode?: string; ex
     await Promise.all(
       batch.map(async (photo) => {
         try {
-          await saveImage(id, photo.artworkId, await downloadAndResize(photo.url));
+          const { large, thumb } = await downloadAndResize(photo.url);
+          await Promise.all([saveImage(id, photo.artworkId, large), saveThumb(id, photo.artworkId, thumb)]);
           copiedNow.push(photo);
         } catch (err) {
           console.error(`Photo for ${photo.artworkId} failed`, err);
