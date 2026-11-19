@@ -72,3 +72,12 @@ describe("applyCorrection", () => {
     expect(isExcluded(undefined)).toBe(false);
   });
 });
+
+describe("isReplaced", () => {
+  it("leaves out a replaced application unless the admin kept it", async () => {
+    const { isReplaced } = await import("./corrections");
+    expect(isReplaced({ replacedBy: "recNew" }, undefined)).toBe(true);
+    expect(isReplaced({ replacedBy: "recNew" }, { keepDuplicate: true })).toBe(false);
+    expect(isReplaced({ replacedBy: null }, undefined)).toBe(false);
+  });
+});

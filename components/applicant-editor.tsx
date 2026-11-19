@@ -11,16 +11,24 @@ export default function ApplicantEditor({
   roundName,
   applicant,
   excluded,
+  duplicate = false,
+  keepDuplicate = false,
 }: {
   roundName: string;
   applicant: Applicant;
   excluded: boolean;
+  /** A newer application from the same name exists. */
+  duplicate?: boolean;
+  keepDuplicate?: boolean;
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveCorrectionsAction, null);
   const field = (name: string) => `${applicant.id}-${name}`;
 
   return (
-    <details className="collapse collapse-arrow bg-base-200 mt-4" open={excluded || undefined}>
+    <details
+      className="collapse collapse-arrow bg-base-200 mt-4"
+      open={excluded || (duplicate && !keepDuplicate) || undefined}
+    >
       <summary className="collapse-title font-semibold">Correct details</summary>
       <div className="collapse-content">
         <form action={action} className="space-y-4">
@@ -31,6 +39,19 @@ export default function ApplicantEditor({
             <input type="checkbox" name="excluded" defaultChecked={excluded} className="checkbox checkbox-sm" />
             <span>Leave this applicant out of the round</span>
           </label>
+          {duplicate && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="keepDuplicate"
+                defaultChecked={keepDuplicate}
+                className="checkbox checkbox-sm"
+              />
+              <span>
+                Keep this application too (it&apos;s a different person with the same name, not a resubmission)
+              </span>
+            </label>
+          )}
 
           <div className="grid gap-3 md:grid-cols-2">
             <div>
@@ -63,7 +84,9 @@ export default function ApplicantEditor({
             <label htmlFor={field("bio")} className="block text-sm font-semibold mb-1">
               Bio
             </label>
-            <p className="text-sm text-base-content/70 mb-1">You can trim anything that would identify the applicant.</p>
+            <p className="text-sm text-base-content/70 mb-1">
+              You can trim anything that would identify the applicant.
+            </p>
             <textarea
               id={field("bio")}
               name="bio"

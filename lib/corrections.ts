@@ -8,6 +8,8 @@ export type ArtworkCorrection = { title?: string; medium?: string };
 
 export type ApplicantCorrection = {
   excluded?: boolean;
+  /** Keep an application that looks like a resubmission (it's a different person with the same name). */
+  keepDuplicate?: boolean;
   bio?: string;
   qualifications?: string;
   otherMembership?: string;
@@ -19,6 +21,7 @@ export type RoundCorrections = Record<string, ApplicantCorrection>;
 
 export type ApplicantEdits = {
   excluded: boolean;
+  keepDuplicate?: boolean;
   bio: string;
   qualifications: string;
   otherMembership: string;
@@ -33,6 +36,7 @@ function clean(text: string): string {
 export function diffCorrection(base: Applicant, edits: ApplicantEdits): ApplicantCorrection | null {
   const result: ApplicantCorrection = {};
   if (edits.excluded) result.excluded = true;
+  if (edits.keepDuplicate) result.keepDuplicate = true;
   for (const key of ["bio", "qualifications", "otherMembership"] as const) {
     if (clean(edits[key]) !== clean(base[key])) result[key] = clean(edits[key]);
   }
@@ -72,4 +76,9 @@ export function applyCorrection(applicant: Applicant, correction: ApplicantCorre
 
 export function isExcluded(correction: ApplicantCorrection | undefined): boolean {
   return correction?.excluded === true;
+}
+
+/** Left out because a newer application from the same name replaced it (unless the admin kept it). */
+export function isReplaced(entry: { replacedBy: string | null }, correction: ApplicantCorrection | undefined): boolean {
+  return entry.replacedBy !== null && correction?.keepDuplicate !== true;
 }

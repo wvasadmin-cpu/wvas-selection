@@ -7,7 +7,7 @@ import PublishPanel from "@/components/publish-panel";
 import { getAdminEmail } from "@/lib/admin";
 import { AirtableError, fetchApplicationRecords } from "@/lib/airtable";
 import { applicantsForRound, isIncomplete, type ApplicantWithImages } from "@/lib/applicants";
-import { applyCorrection, isExcluded, type RoundCorrections } from "@/lib/corrections";
+import { applyCorrection, isExcluded, isReplaced, type RoundCorrections } from "@/lib/corrections";
 import type { RoundSummary } from "@/lib/rounds";
 import { findPublishedRound, getCorrections } from "@/lib/store";
 
@@ -39,8 +39,14 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
 
   const incomplete = entries.filter((e) => isIncomplete(e.applicant));
   const complete = entries.filter((e) => !isIncomplete(e.applicant));
-  const included = complete.filter((e) => !isExcluded(corrections[e.applicant.id]));
-  const excluded = complete.filter((e) => isExcluded(corrections[e.applicant.id]));
+  const leftOut = (e: ApplicantWithImages) =>
+    isExcluded(corrections[e.applicant.id]) || isReplaced(e, corrections[e.applicant.id]);
+  const included = complete.filter((e) => !leftOut(e));
+  const excluded = complete.filter(leftOut);
+  const submitted = (id: string | null) => {
+    const at = entries.find((e) => e.applicant.id === id)?.submittedAt;
+    return at ? new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "later";
+  };
 
   return (
     <section>
@@ -72,12 +78,13 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
 
       {incomplete.length > 0 && (
         <div role="status" className="alert alert-warning mb-8">
-          Left out as incomplete (no artworks yet): {incomplete.map((e) => e.applicant.fullName || "unnamed").join(", ")}.
+          Left out as incomplete (no artworks yet):{" "}
+          {incomplete.map((e) => e.applicant.fullName || "unnamed").join(", ")}.
         </div>
       )}
 
       <div className="space-y-12">
-        {included.map(({ applicant: base, images }) => {
+        {included.map(({ applicant: base, images, replacedBy }) => {
           const correction = corrections[base.id];
           const applicant = applyCorrection(base, correction);
           const missing = applicant.artworks.filter((a) => !a.hasImage).length;
@@ -93,6 +100,9 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
                     </span>
                   )}
                   {correction && <span className="text-sm bg-secondary/30 px-2 rounded">corrected</span>}
+                  {replacedBy && (
+                    <span className="text-sm bg-secondary/30 px-2 rounded">kept: same name as a newer application</span>
+                  )}
                 </header>
 
                 {applicant.qualifications && (
@@ -129,7 +139,13 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
                   />
                 </div>
 
-                <ApplicantEditor roundName={round} applicant={applicant} excluded={false} />
+                <ApplicantEditor
+                  roundName={round}
+                  applicant={applicant}
+                  excluded={false}
+                  duplicate={replacedBy !== null}
+                  keepDuplicate={correction?.keepDuplicate === true}
+                />
               </div>
             </article>
           );
@@ -140,7 +156,9 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
         <div className="mt-12">
           <h3 className="font-display text-xl mb-3">Left out of this round</h3>
           <div className="space-y-4">
-            {excluded.map(({ applicant: base }) => {
+            {excluded.map((entry) => {
+              const { applicant: base } = entry;
+              const replaced = isReplaced(entry, corrections[base.id]);
               const applicant = applyCorrection(base, corrections[base.id]);
               return (
                 <div key={applicant.id} className="card bg-base-100 border border-dashed border-base-300">
@@ -149,8 +167,24 @@ export default async function RoundPreviewPage({ params }: { params: Promise<{ r
                       <strong>Applicant {applicant.initials}</strong>{" "}
                       <span className="text-sm bg-secondary/30 px-2 rounded">{applicant.fullName}</span>
                     </p>
-                    <p className="text-sm text-base-content/70">Untick the box below and save to include them again.</p>
-                    <ApplicantEditor roundName={round} applicant={applicant} excluded />
+                    {replaced ? (
+                      <p className="text-sm text-base-content/70">
+                        Replaced by a newer application from the same name (sent {submitted(entry.replacedBy)}), which
+                        is included above. If this is a different person, tick &ldquo;Keep this application too&rdquo;
+                        below and save.
+                      </p>
+                    ) : (
+                      <p className="text-sm text-base-content/70">
+                        Untick the box below and save to include them again.
+                      </p>
+                    )}
+                    <ApplicantEditor
+                      roundName={round}
+                      applicant={applicant}
+                      excluded={isExcluded(corrections[base.id])}
+                      duplicate={entry.replacedBy !== null}
+                      keepDuplicate={corrections[base.id]?.keepDuplicate === true}
+                    />
                   </div>
                 </div>
               );

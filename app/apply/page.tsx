@@ -54,7 +54,7 @@ export default async function ApplyPage() {
         </p>
       </Section>
 
-      <Section title="On the viewing day">
+      <Section title="On the Viewing and Voting Day">
         <p>
           Please bring the works listed on your application. You may also bring an artist statement, sketchbooks,
           preparatory work or anything else that is relevant. This supporting material will not be judged, but may help

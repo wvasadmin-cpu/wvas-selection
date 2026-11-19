@@ -96,3 +96,44 @@ describe("countRounds", () => {
     ]);
   });
 });
+
+describe("resubmissions", () => {
+  const rec = (id: string, first: string, surname: string, createdTime: string): AirtableRecord => ({
+    id,
+    createdTime,
+    fields: { "First Name": first, Surname: surname, "Date of Submission": "R", "Artwork 1": "X" },
+  });
+
+  it("marks earlier applications from the same name as replaced by the newest", () => {
+    const round = applicantsForRound(
+      [
+        rec("recOld", "Rosa", "Example", "2026-12-01T10:00:00.000Z"),
+        rec("recOther", "Ray", "Bloggs", "2026-12-02T10:00:00.000Z"),
+        rec("recNew", "rosa", "EXAMPLE ", "2026-12-05T10:00:00.000Z"),
+      ],
+      "R",
+    );
+    expect(round.map((e) => [e.applicant.id, e.replacedBy])).toEqual([
+      ["recOld", "recNew"],
+      ["recOther", null],
+      ["recNew", null],
+    ]);
+    expect(round[0].submittedAt).toBe("2026-12-01T10:00:00.000Z");
+  });
+
+  it("gives the current application the plain initials", () => {
+    const round = applicantsForRound(
+      [rec("recOld", "Rosa", "Example", "2026-12-01T10:00:00.000Z"), rec("recNew", "Rosa", "Example", "2026-12-05T10:00:00.000Z")],
+      "R",
+    );
+    expect(round.map((e) => e.applicant.initials)).toEqual(["RE 2", "RE"]);
+  });
+
+  it("leaves different people alone", () => {
+    const round = applicantsForRound(
+      [rec("a", "Rosa", "Example", "2026-12-01T10:00:00.000Z"), rec("b", "Rob", "Example", "2026-12-02T10:00:00.000Z")],
+      "R",
+    );
+    expect(round.every((e) => e.replacedBy === null)).toBe(true);
+  });
+});

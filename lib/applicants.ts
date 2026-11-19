@@ -13,7 +13,7 @@ export type AirtableAttachment = {
   thumbnails?: { large?: { url: string }; full?: { url: string } };
 };
 
-export type AirtableRecord = { id: string; fields: Record<string, unknown> };
+export type AirtableRecord = { id: string; createdTime?: string; fields: Record<string, unknown> };
 
 /**
  * Where each artwork's photo can be fetched from (Airtable links expire after a
@@ -24,7 +24,17 @@ export type ImageSource = { artworkId: string; url: string; thumbUrl: string; fi
 
 const WEB_PHOTO = /^image\/(jpeg|png|webp)$/;
 
-export type ApplicantWithImages = { applicant: Applicant; images: ImageSource[] };
+export type ApplicantWithImages = {
+  applicant: Applicant;
+  images: ImageSource[];
+  /** When the application was submitted (Airtable's record creation time). */
+  submittedAt: string;
+  /**
+   * If someone with the same name sent a newer application in this round
+   * (e.g. after changing their works), the id of that newer one; else null.
+   */
+  replacedBy: string | null;
+};
 
 function text(value: unknown): string {
   if (typeof value === "string") return value.trim();
@@ -44,7 +54,7 @@ export function roundOf(record: AirtableRecord): string {
   return text(record.fields[FIELDS.round]).replace(/\s+/g, " ");
 }
 
-export function toApplicant(record: AirtableRecord, initials: string): ApplicantWithImages {
+export function toApplicant(record: AirtableRecord, initials: string): Pick<ApplicantWithImages, "applicant" | "images"> {
   const f = record.fields;
   const images: ImageSource[] = [];
   const raw = [];
@@ -97,13 +107,49 @@ export function isIncomplete(applicant: Applicant): boolean {
   return applicant.artworks.length === 0;
 }
 
-/** All applicants in one round, in Airtable order, with unique initials. */
+/** Same person, as far as the name goes: letters only, ignoring case, spaces and punctuation. */
+function nameKey(r: AirtableRecord): string {
+  return `${text(r.fields[FIELDS.firstName])}|${text(r.fields[FIELDS.surname])}`.toLowerCase().replace(/[^a-z|]/g, "");
+}
+
+/**
+ * All applicants in one round, in Airtable order, with unique initials. Where
+ * the same name applied more than once, earlier applications are marked as
+ * replaced by the newest (applicants are asked to send a new form if their
+ * works change).
+ */
 export function applicantsForRound(records: AirtableRecord[], round: string): ApplicantWithImages[] {
   const inRound = records.filter((r) => roundOf(r).toLowerCase() === round.trim().toLowerCase());
-  const initials = uniqueInitials(
-    inRound.map((r) => ({ firstName: text(r.fields[FIELDS.firstName]), surname: text(r.fields[FIELDS.surname]) })),
+
+  // The newest application for each name (by submission time, then Airtable order).
+  const newest = new Map<string, { record: AirtableRecord; index: number }>();
+  inRound.forEach((record, index) => {
+    const key = nameKey(record);
+    if (key === "|") return;
+    const current = newest.get(key);
+    const later =
+      !current || (record.createdTime ?? "") > (current.record.createdTime ?? "") ||
+      ((record.createdTime ?? "") === (current.record.createdTime ?? "") && index > current.index);
+    if (later) newest.set(key, { record, index });
+  });
+  const replacedBy = inRound.map((r) => {
+    const latest = newest.get(nameKey(r));
+    return latest && latest.record.id !== r.id ? latest.record.id : null;
+  });
+
+  // Current applications get the plain initials ("RB"); replaced ones come after ("RB 2").
+  const order = inRound.map((_, i) => i).sort((a, b) => Number(replacedBy[a] !== null) - Number(replacedBy[b] !== null));
+  const sortedInitials = uniqueInitials(
+    order.map((i) => ({ firstName: text(inRound[i].fields[FIELDS.firstName]), surname: text(inRound[i].fields[FIELDS.surname]) })),
   );
-  return inRound.map((r, i) => toApplicant(r, initials[i]));
+  const initials: string[] = [];
+  order.forEach((i, k) => (initials[i] = sortedInitials[k]));
+
+  return inRound.map((r, i) => ({
+    ...toApplicant(r, initials[i]),
+    submittedAt: r.createdTime ?? "",
+    replacedBy: replacedBy[i],
+  }));
 }
 
 export type RoundCount = {

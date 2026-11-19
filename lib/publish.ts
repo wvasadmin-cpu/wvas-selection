@@ -2,7 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { fetchApplicationRecords } from "./airtable";
 import { applicantsForRound, isIncomplete } from "./applicants";
-import { applyCorrection, isExcluded } from "./corrections";
+import { applyCorrection, isExcluded, isReplaced } from "./corrections";
 import { downloadAndResize } from "./images";
 import { nextCopied, photosToCopy } from "./photo-plan";
 import type { Round } from "./rounds";
@@ -43,7 +43,7 @@ export async function publishStep(name: string, options: { passcode?: string; ex
   ]);
 
   const entries = applicantsForRound(records, name).filter(
-    (e) => !isIncomplete(e.applicant) && !isExcluded(corrections[e.applicant.id]),
+    (e) => !isIncomplete(e.applicant) && !isExcluded(corrections[e.applicant.id]) && !isReplaced(e, corrections[e.applicant.id]),
   );
   const id = existing?.id ?? randomBytes(18).toString("base64url");
 

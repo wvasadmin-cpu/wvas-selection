@@ -24,12 +24,15 @@ export async function saveCorrectionsAction(_prev: ActionState, formData: FormDa
   const round = String(formData.get("round") ?? "");
   const applicantId = String(formData.get("applicantId") ?? "");
   try {
-    const entry = applicantsForRound(await fetchApplicationRecords(), round).find((e) => e.applicant.id === applicantId);
+    const entry = applicantsForRound(await fetchApplicationRecords(), round).find(
+      (e) => e.applicant.id === applicantId,
+    );
     if (!entry) return { ok: false, message: "That applicant is no longer in this round in Airtable." };
 
     const base = entry.applicant;
     const edits: ApplicantEdits = {
       excluded: formData.get("excluded") === "on",
+      keepDuplicate: formData.get("keepDuplicate") === "on",
       bio: String(formData.get("bio") ?? ""),
       qualifications: String(formData.get("qualifications") ?? ""),
       otherMembership: String(formData.get("otherMembership") ?? ""),
@@ -136,6 +139,8 @@ export async function setPasscodeAction(_prev: ActionState, formData: FormData):
   revalidatePath(previewPath(round.name));
   return {
     ok: true,
-    message: passcode ? "Passcode saved. Anyone who already entered the old one will be asked again." : "Passcode removed.",
+    message: passcode
+      ? "Passcode saved. Anyone who already entered the old one will be asked again."
+      : "Passcode removed.",
   };
 }
