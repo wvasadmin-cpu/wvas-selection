@@ -17,22 +17,23 @@ const member = {
 };
 
 describe("associateAck", () => {
-  it("thanks someone who has paid, with their reference, as a plain letter", () => {
+  it("thanks someone who has paid, with their reference, and leaves out the address", () => {
     const m = associateAck({ ...member, payment: "paid" });
     expect(m.to).toBe("jo@example.com");
-    expect(m.subject).toBe("Your WVAS Associate Membership application");
+    expect(m.subject).toBe("Application received: WVAS Associate Membership");
     expect(m.text).toContain("Dear Jo,");
     expect(m.text).toContain("using the reference EXAMPLEJ");
-    expect(m.text).not.toContain("00249374");
+    expect(m.text).not.toContain("Account number");
     expect(m.text + m.html).not.toContain("High Street");
-    expect(m.text + m.html).not.toContain("900123");
-    expect(m.html).not.toContain("<table");
+    expect(m.text).toContain("ending 123");
+    expect(m.text).not.toContain("900123");
   });
 
   it("reminds someone who hasn't paid, with the bank details and their reference", () => {
     const m = associateAck({ ...member, payment: "later" });
     expect(m.text).toContain("If you haven't yet paid the £10 annual fee");
-    expect(m.text).toContain("account 00249374, sort code 30-98-02, reference EXAMPLEJ.");
+    expect(m.text).toContain("Account number: 00249374");
+    expect(m.text).toContain("Reference: EXAMPLEJ");
     expect(m.html).toContain("EXAMPLEJ");
   });
 

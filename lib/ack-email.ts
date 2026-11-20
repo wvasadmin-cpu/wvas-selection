@@ -64,34 +64,79 @@ function wrapHtml(firstName: string, body: string): string {
   );
 }
 
-function bankLine(reference: string): string {
-  return `${BANK.accountName}, ${BANK.bank}, account ${BANK.accountNumber}, sort code ${BANK.sortCode}, reference ${reference}.`;
+function bankText(reference: string): string {
+  return [
+    `  Account name: ${BANK.accountName}`,
+    `  Bank: ${BANK.bank}`,
+    `  Account number: ${BANK.accountNumber}`,
+    `  Sort code: ${BANK.sortCode}`,
+    `  Reference: ${reference}`,
+  ].join("\n");
 }
 
-/** Written as a short personal letter: a table-style "receipt" gets flagged as spam. */
+function bankHtml(reference: string): string {
+  const row = (l: string, v: string, strong = false) =>
+    `<tr><td style="padding:3px 14px 3px 0;color:${COLOUR.label};">${l}</td><td style="padding:3px 0;${strong ? "font-weight:bold;font-family:monospace;font-size:15px;" : ""}">${esc(v)}</td></tr>`;
+  return (
+    `<table style="border-collapse:collapse;background:${COLOUR.box};border:2px solid ${COLOUR.border};border-radius:6px;padding:10px;margin:8px 0;">` +
+    `<tr><td style="padding:10px;"><table style="border-collapse:collapse;font-size:14px;">` +
+    row("Account name", BANK.accountName) +
+    row("Bank", BANK.bank) +
+    row("Account number", BANK.accountNumber) +
+    row("Sort code", BANK.sortCode) +
+    row("Reference", reference, true) +
+    `</table></td></tr></table>`
+  );
+}
+
 export function associateAck(app: CleanMembership): EmailMessage {
   const reference = paymentReference(app.firstName, app.surname);
-  const paras =
-    app.payment === "paid"
-      ? [
-          `Thank you for applying to become an Associate Member of the Welland Valley Art Society. Your application has reached us safely.`,
-          `You mentioned that you've paid the ${ASSOCIATE_FEE} annual fee by bank transfer, using the reference ${reference}. Once your payment has been confirmed, the Membership Secretary will send you a welcome email with your Associate membership details.`,
-        ]
-      : [
-          `Thank you for applying to become an Associate Member of the Welland Valley Art Society. Your application has reached us safely.`,
-          `If you haven't yet paid the ${ASSOCIATE_FEE} annual fee, please pay by bank transfer so that your membership can be confirmed: ${bankLine(reference)}`,
-          `Once your payment has arrived, the Membership Secretary will send you a welcome email with your Associate membership details.`,
-        ];
-  paras.push("If any of your details need correcting, or you have any questions, just reply to this email.");
+  const paid = app.payment === "paid";
+  const intro =
+    "Thank you for applying to become an Associate Member of the Welland Valley Art Society. We've received your application; the details we have are below.";
+  const paymentLine = paid
+    ? `You told us you've paid the ${ASSOCIATE_FEE} annual fee by bank transfer using the reference ${reference}. Once your payment has been confirmed, the Membership Secretary will send you a welcome email with your Associate membership details.`
+    : `If you haven't yet paid the ${ASSOCIATE_FEE} annual fee, please do so by bank transfer so that your membership can be confirmed:`;
+  const afterBank =
+    "Once your payment has arrived, the Membership Secretary will send you a welcome email with your Associate membership details.";
+  const sections: Section[] = [
+    {
+      heading: "Your application",
+      rows: [
+        ["Name", `${app.firstName} ${app.surname}`],
+        ["Email", app.email],
+        ["Phone", maskPhone(app.phone)],
+        ["Payment", paid ? `Paid (reference ${reference})` : "To follow"],
+      ],
+    },
+  ];
 
-  const text = [`Dear ${app.firstName},`, "", ...paras.flatMap((p) => [p, ""]), "Best wishes,", SIGN_OFF].join("\n");
-  const html =
-    `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">` +
-    `<p>Dear ${esc(app.firstName)},</p>` +
-    paras.map((p) => `<p>${esc(p)}</p>`).join("") +
-    `<p>Best wishes,<br>${SIGN_OFF}</p></div>`;
+  const text = [
+    `Dear ${app.firstName},`,
+    "",
+    intro,
+    "",
+    "PAYMENT",
+    paymentLine,
+    ...(paid ? [] : [bankText(reference), "", afterBank]),
+    "",
+    sectionsText(sections),
+    "",
+    OUTRO,
+    "",
+    "Best wishes,",
+    SIGN_OFF,
+  ].join("\n");
 
-  return { to: app.email, subject: "Your WVAS Associate Membership application", text, html, images: [] };
+  const html = wrapHtml(
+    app.firstName,
+    `<p>${esc(intro)}</p>` +
+      `<p><strong>Payment.</strong> ${esc(paymentLine)}</p>` +
+      (paid ? "" : bankHtml(reference) + `<p>${esc(afterBank)}</p>`) +
+      `<table style="border-collapse:collapse;width:100%;font-size:14px;">${sectionsHtml(sections)}</table>`,
+  );
+
+  return { to: app.email, subject: "Application received: WVAS Associate Membership", text, html, images: [] };
 }
 
 export function exhibitorAck(
