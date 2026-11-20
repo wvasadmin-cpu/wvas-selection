@@ -3,6 +3,8 @@
 import { AirtableError, createMemberRecord } from "@/lib/airtable";
 import { ukToday } from "@/lib/intake";
 import { toMemberFields, validateMembership, type MembershipInput } from "@/lib/membership";
+import { associateAck } from "@/lib/ack-email";
+import { mailerConfigured, sendEmail } from "@/lib/mailer";
 import { saveApplyProblem } from "@/lib/store";
 
 export type JoinResult = { ok: true } | { ok: false; errors: Record<string, string>; message: string };
@@ -14,7 +16,6 @@ export async function submitMembershipAction(input: MembershipInput): Promise<Jo
   }
   try {
     await createMemberRecord(toMemberFields(checked.application, { today: ukToday() }));
-    return { ok: true };
   } catch (e) {
     const detail = e instanceof AirtableError ? e.message : e instanceof Error ? e.message : "Unknown error";
     console.error(detail);
@@ -26,4 +27,18 @@ export async function submitMembershipAction(input: MembershipInput): Promise<Jo
       message: "Sorry, your application couldn't be sent just now. Please try again in a few minutes. Your answers are still here.",
     };
   }
+
+  // The application is saved; the acknowledgement email is a courtesy, so a
+  // problem sending it is recorded for the admin but doesn't fail the application.
+  if (!mailerConfigured()) return { ok: true };
+  try {
+    await sendEmail(associateAck(checked.application));
+  } catch (e) {
+    console.error(e);
+    await saveApplyProblem({
+      at: new Date().toISOString(),
+      detail: `Associate acknowledgement email: ${e instanceof Error ? e.message : "unknown error"}`,
+    }).catch(() => undefined);
+  }
+  return { ok: true };
 }

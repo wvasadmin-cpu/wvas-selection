@@ -32,6 +32,8 @@ Design spec: the "WVAS Exhibitor Selection – Design Spec" Claude doc.
 - `app/apply/` — public exhibitor application form (its own header).
 - `app/join/` — public associate membership form; adds to the master members
   table (`AIRTABLE_MEMBERS_TABLE`), never reads it.
+- `apps-script/` — the Apps Script (run under wvasmembersec) that sends the
+  forms' acknowledgement emails; wording lives in `lib/ack-email.ts`.
 - `components/` — UI.
 - `lib/` — logic. `artwork.ts` (title/medium split), `initials.ts`,
   `committee.ts`, `tally.ts` are pure and unit-tested.

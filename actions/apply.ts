@@ -3,6 +3,8 @@
 import { AirtableError, createApplicationRecord } from "@/lib/airtable";
 import { toAirtableFields, validateApplication, type ApplicationInput } from "@/lib/application";
 import { intakeStatus, ukToday } from "@/lib/intake";
+import { exhibitorAck } from "@/lib/ack-email";
+import { mailerConfigured, sendEmail } from "@/lib/mailer";
 import { getIntake, saveApplyProblem, uploadExists } from "@/lib/store";
 
 export type ApplyResult = { ok: true } | { ok: false; errors: Record<string, string>; message: string };
@@ -38,7 +40,6 @@ export async function submitApplicationAction(input: ApplicationInput): Promise<
         photoUrl: (id) => `${siteUrl()}/api/uploads/${id}`,
       }),
     );
-    return { ok: true };
   } catch (e) {
     console.error(e instanceof AirtableError ? e.message : e);
     // Record the reason for the admin's Applications page (not shown to applicants).
@@ -52,4 +53,26 @@ export async function submitApplicationAction(input: ApplicationInput): Promise<
       message: "Sorry, your application couldn't be sent just now. Please try again in a few minutes. Your answers are still here.",
     };
   }
+
+  // The application is saved; the acknowledgement email is a courtesy, so a
+  // problem sending it is recorded for the admin but doesn't fail the application.
+  if (!mailerConfigured()) return { ok: true };
+  try {
+    await sendEmail(
+      exhibitorAck(checked.application, {
+        roundName: intake.roundName,
+        closesOn: intake.closesOn,
+        viewing: intake.viewing,
+        today: ukToday(),
+        thumbUrl: (id) => `${siteUrl()}/api/uploads/${id}?size=thumb`,
+      }),
+    );
+  } catch (e) {
+    console.error(e);
+    await saveApplyProblem({
+      at: new Date().toISOString(),
+      detail: `Exhibitor acknowledgement email: ${e instanceof Error ? e.message : "unknown error"}`,
+    }).catch(() => undefined);
+  }
+  return { ok: true };
 }

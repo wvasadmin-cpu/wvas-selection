@@ -3,6 +3,7 @@ import AdminSignIn from "@/components/admin-sign-in";
 import IntakeForm from "@/components/intake-form";
 import { getAdminEmail } from "@/lib/admin";
 import { intakeStatus } from "@/lib/intake";
+import { mailerConfigured } from "@/lib/mailer";
 import { getApplyProblem, getIntake } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default async function IntakePage() {
   const [intake, problem] = await Promise.all([getIntake(), getApplyProblem()]);
   const hasWriteToken = Boolean(process.env.AIRTABLE_WRITE_TOKEN);
   const hasMembersTable = Boolean(process.env.AIRTABLE_MEMBERS_TABLE);
+  const hasEmail = mailerConfigured();
   const status = intakeStatus(intake);
   const words = { open: "Open: accepting applications", closed: "Closed", "not-set": "Not set up yet" };
 
@@ -58,6 +60,14 @@ export default async function IntakePage() {
             <span className="text-success font-semibold">found</span>
           ) : (
             <span className="text-error font-semibold">not found: add it in Netlify, then Trigger deploy</span>
+          )}
+        </p>
+        <p>
+          Acknowledgement emails (EMAIL_RELAY_URL and EMAIL_RELAY_SECRET):{" "}
+          {hasEmail ? (
+            <span className="text-success font-semibold">set up</span>
+          ) : (
+            <span className="text-error font-semibold">not set up yet: see apps-script/SETUP.md</span>
           )}
         </p>
         {problem ? (
