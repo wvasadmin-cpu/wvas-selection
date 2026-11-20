@@ -12,7 +12,8 @@
  */
 
 // ---- Settings ----
-const SENDER_NAME = 'Welland Valley Art Society';
+// Matches the name Rachel's own emails from this account show, so Gmail sees the same sender.
+const SENDER_NAME = 'WVAS Membership Welland Valley Art Society';
 // Optional: also send a copy of every acknowledgement to this address
 // (e.g. 'wvasmembersec@gmail.com'). Leave empty for no copies.
 const COPY_TO = '';
