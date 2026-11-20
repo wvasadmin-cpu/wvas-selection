@@ -4,7 +4,6 @@ import { useState, type ReactNode } from "react";
 import { submitApplicationAction } from "@/actions/apply";
 import { artworkCount, type WorkType } from "@/lib/application";
 import { tidyCase } from "@/lib/name-match";
-import { ACCEPTED_MEDIA } from "./accepted-media";
 import PhotoPicker, { type PhotoState } from "./photo-picker";
 
 type Artwork = { title: string; medium: string; photo: PhotoState };
@@ -52,6 +51,7 @@ export default function ApplicationForm({ intro }: { intro: ReactNode }) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sentTo, setSentTo] = useState("");
+  const [emailedTo, setEmailedTo] = useState("");
 
   const count = workType ? artworkCount(workType) : 0;
 
@@ -89,6 +89,7 @@ export default function ApplicationForm({ intro }: { intro: ReactNode }) {
         website,
       });
       if (result.ok) {
+        setEmailedTo(result.emailedTo ?? "");
         setSentTo(tidyCase(about.firstName.trim()));
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
@@ -113,6 +114,12 @@ export default function ApplicationForm({ intro }: { intro: ReactNode }) {
           Your application has been received. The Membership Secretary will be in touch by email, and we look forward to
           seeing your work on the viewing day.
         </p>
+        {emailedTo && (
+          <p>
+            We&apos;ve emailed a copy of your application to <strong>{emailedTo}</strong>. If it isn&apos;t in your
+            inbox within a few minutes, please check your spam or junk folder.
+          </p>
+        )}
         <p className="text-sm text-base-content/70">You can now close this page.</p>
       </div>
     );
@@ -280,12 +287,6 @@ export default function ApplicationForm({ intro }: { intro: ReactNode }) {
             {errors.workType && <p className="text-error text-sm mt-1">{errors.workType}</p>}
           </div>
 
-          <datalist id="media-suggestions">
-            {ACCEPTED_MEDIA.map((m) => (
-              <option key={m} value={m} />
-            ))}
-          </datalist>
-
           {artworks.slice(0, count).map((a, i) => (
             <div key={i} className="rounded-box border border-base-300 bg-base-100 p-4 space-y-3">
               <p className="font-semibold">Artwork {i + 1}</p>
@@ -305,7 +306,6 @@ export default function ApplicationForm({ intro }: { intro: ReactNode }) {
                 <Field id={`medium${i}`} label="Medium" error={errors[`medium${i}`]}>
                   <input
                     id={`medium${i}`}
-                    list="media-suggestions"
                     placeholder="e.g. Oil on canvas"
                     className={input}
                     value={a.medium}

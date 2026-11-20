@@ -14,7 +14,7 @@ export default function JoinForm({ intro }: { intro: ReactNode }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState<{ name: string; payment: string; reference: string } | null>(null);
+  const [sent, setSent] = useState<{ name: string; payment: string; reference: string; emailedTo: string } | null>(null);
 
   const reference = paymentReference(form.firstName, form.surname);
 
@@ -50,7 +50,7 @@ export default function JoinForm({ intro }: { intro: ReactNode }) {
     try {
       const result = await submitMembershipAction({ ...form, payment, website });
       if (result.ok) {
-        setSent({ name: tidyCase(form.firstName.trim()), payment, reference });
+        setSent({ name: tidyCase(form.firstName.trim()), payment, reference, emailedTo: result.emailedTo ?? "" });
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -86,6 +86,12 @@ export default function JoinForm({ intro }: { intro: ReactNode }) {
           <p>
             Once your payment has been confirmed, the Membership Secretary will send you a welcome email with your
             Associate membership details.
+          </p>
+        )}
+        {sent.emailedTo && (
+          <p>
+            We&apos;ve emailed a copy of your application to <strong>{sent.emailedTo}</strong>. If it isn&apos;t in your
+            inbox within a few minutes, please check your spam or junk folder.
           </p>
         )}
         <p className="text-sm text-base-content/70">You can now close this page.</p>

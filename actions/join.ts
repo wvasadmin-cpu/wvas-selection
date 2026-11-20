@@ -7,7 +7,7 @@ import { associateAck } from "@/lib/ack-email";
 import { mailerConfigured, sendEmail } from "@/lib/mailer";
 import { saveApplyProblem } from "@/lib/store";
 
-export type JoinResult = { ok: true } | { ok: false; errors: Record<string, string>; message: string };
+export type JoinResult = { ok: true; emailedTo?: string } | { ok: false; errors: Record<string, string>; message: string };
 
 export async function submitMembershipAction(input: MembershipInput): Promise<JoinResult> {
   const checked = validateMembership(input);
@@ -33,6 +33,7 @@ export async function submitMembershipAction(input: MembershipInput): Promise<Jo
   if (!mailerConfigured()) return { ok: true };
   try {
     await sendEmail(associateAck(checked.application));
+    return { ok: true, emailedTo: checked.application.email };
   } catch (e) {
     console.error(e);
     await saveApplyProblem({

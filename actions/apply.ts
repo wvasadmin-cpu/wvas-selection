@@ -7,7 +7,7 @@ import { exhibitorAck } from "@/lib/ack-email";
 import { mailerConfigured, sendEmail } from "@/lib/mailer";
 import { getIntake, saveApplyProblem, uploadExists } from "@/lib/store";
 
-export type ApplyResult = { ok: true } | { ok: false; errors: Record<string, string>; message: string };
+export type ApplyResult = { ok: true; emailedTo?: string } | { ok: false; errors: Record<string, string>; message: string };
 
 function siteUrl() {
   return (process.env.AUTH_URL ?? "https://wvas-selection.netlify.app").replace(/\/$/, "");
@@ -67,6 +67,7 @@ export async function submitApplicationAction(input: ApplicationInput): Promise<
         thumbUrl: (id) => `${siteUrl()}/api/uploads/${id}?size=thumb`,
       }),
     );
+    return { ok: true, emailedTo: checked.application.email };
   } catch (e) {
     console.error(e);
     await saveApplyProblem({
